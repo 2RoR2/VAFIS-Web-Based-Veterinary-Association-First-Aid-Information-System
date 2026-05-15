@@ -1,0 +1,156 @@
+import { useState } from 'react';
+import { Header } from './components/layout/Header';
+import { Footer } from './components/layout/Footer';
+import { HomePage } from './pages/HomePage';
+import { EmergencyPage } from './pages/EmergencyPage';
+import { GuidePage } from './pages/GuidePage';
+import { VideoPage } from './pages/VideoPage';
+import { QuizPage } from './pages/QuizPage';
+import { ClinicsPage } from './pages/ClinicsPage';
+import { AdminPage } from './pages/AdminPage';
+import { AuthPage, AuthUser } from './pages/AuthPage';
+import { FeedbackPage } from './pages/FeedbackPage';
+import { PrivacyPage, TermsPage } from './pages/PolicyPages';
+import {
+  AdminWorkflowDashboard,
+  AuditLogPage,
+  LogoutPage,
+  ManageClinicPage,
+  ManageGuidePage,
+  ManageQuizPage,
+  NotificationsPage,
+  PetOwnerDashboard,
+  PetProfile,
+  PetProfilePage,
+  ProfessionalDashboard,
+  ReviewGuidePage,
+  SpeciesPage,
+} from './pages/WorkflowPages';
+
+type PageType =
+  | 'home'
+  | 'emergency'
+  | 'guide'
+  | 'videos'
+  | 'quiz'
+  | 'clinics'
+  | 'feedback'
+  | 'admin'
+  | 'admin-workflow'
+  | 'login'
+  | 'signup'
+  | 'search'
+  | 'species'
+  | 'pet-dashboard'
+  | 'pet-profile'
+  | 'manage-guide'
+  | 'manage-quiz'
+  | 'manage-clinic'
+  | 'professional-dashboard'
+  | 'review-guide'
+  | 'notifications'
+  | 'audit-log'
+  | 'logout'
+  | 'terms'
+  | 'privacy';
+
+export default function App() {
+  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const [pageData, setPageData] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [pets, setPets] = useState<PetProfile[]>([
+    { id: 'demo-pet-1', name: 'Milo', species: 'Cats', age: '4' },
+  ]);
+
+  const handleNavigate = (page: string, data?: any) => {
+    const staffPages = [
+      'admin',
+      'admin-workflow',
+      'manage-guide',
+      'manage-quiz',
+      'manage-clinic',
+      'professional-dashboard',
+      'review-guide',
+      'notifications',
+      'audit-log',
+    ];
+
+    if (staffPages.includes(page) && (!currentUser || currentUser.role === 'pet-owner')) {
+      setCurrentPage('login');
+      setPageData({ requestedPage: page, requestedData: data });
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    setCurrentPage(page as PageType);
+    setPageData(data || null);
+    window.scrollTo(0, 0);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCurrentPage('home');
+    setPageData(null);
+    window.scrollTo(0, 0);
+  };
+
+  const handleAuthSuccess = (user: AuthUser) => {
+    setCurrentUser(user);
+    const requestedPage = pageData?.requestedPage;
+    const requestedData = pageData?.requestedData;
+
+    if (requestedPage && user.role !== 'pet-owner') {
+      setCurrentPage(requestedPage as PageType);
+      setPageData(requestedData || null);
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    if (user.role === 'pet-owner') {
+      setCurrentPage('pet-dashboard');
+      setPageData(null);
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    setCurrentPage(user.role === 'veterinary-professional' ? 'professional-dashboard' : 'admin-workflow');
+    setPageData(null);
+    window.scrollTo(0, 0);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header onNavigate={handleNavigate} currentPage={currentPage} currentUser={currentUser} onLogout={handleLogout} />
+
+      <main className="flex-1">
+        {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
+        {currentPage === 'emergency' && <EmergencyPage onNavigate={handleNavigate} />}
+        {currentPage === 'guide' && <GuidePage guideId={pageData?.guideId || 'choking-emergency'} onNavigate={handleNavigate} />}
+        {currentPage === 'videos' && <VideoPage onNavigate={handleNavigate} />}
+        {currentPage === 'quiz' && <QuizPage onNavigate={handleNavigate} />}
+        {currentPage === 'clinics' && <ClinicsPage onNavigate={handleNavigate} />}
+        {currentPage === 'feedback' && <FeedbackPage onNavigate={handleNavigate} contentType={pageData?.contentType} contentTitle={pageData?.contentTitle} />}
+        {currentPage === 'admin' && <AdminPage onNavigate={handleNavigate} />}
+        {currentPage === 'admin-workflow' && <AdminWorkflowDashboard onNavigate={handleNavigate} />}
+        {currentPage === 'login' && <AuthPage mode="login" onNavigate={handleNavigate} onAuthSuccess={handleAuthSuccess} />}
+        {currentPage === 'signup' && <AuthPage mode="signup" onNavigate={handleNavigate} onAuthSuccess={handleAuthSuccess} />}
+        {currentPage === 'search' && <EmergencyPage onNavigate={handleNavigate} initialSpecies={pageData?.species} initialSearch={pageData?.search} />}
+        {currentPage === 'species' && <SpeciesPage onNavigate={handleNavigate} species={pageData?.species || 'Dogs'} />}
+        {currentPage === 'pet-dashboard' && <PetOwnerDashboard onNavigate={handleNavigate} pets={pets} onPetsChange={setPets} />}
+        {currentPage === 'pet-profile' && <PetProfilePage onNavigate={handleNavigate} pets={pets} onPetsChange={setPets} />}
+        {currentPage === 'manage-guide' && <ManageGuidePage onNavigate={handleNavigate} />}
+        {currentPage === 'manage-quiz' && <ManageQuizPage onNavigate={handleNavigate} />}
+        {currentPage === 'manage-clinic' && <ManageClinicPage onNavigate={handleNavigate} />}
+        {currentPage === 'professional-dashboard' && <ProfessionalDashboard onNavigate={handleNavigate} />}
+        {currentPage === 'review-guide' && <ReviewGuidePage onNavigate={handleNavigate} guideId={pageData?.guideId} />}
+        {currentPage === 'notifications' && <NotificationsPage onNavigate={handleNavigate} />}
+        {currentPage === 'audit-log' && <AuditLogPage onNavigate={handleNavigate} />}
+        {currentPage === 'logout' && <LogoutPage onConfirm={handleLogout} onCancel={() => handleNavigate(currentUser?.role === 'pet-owner' ? 'pet-dashboard' : 'admin-workflow')} />}
+        {currentPage === 'terms' && <TermsPage onNavigate={handleNavigate} />}
+        {currentPage === 'privacy' && <PrivacyPage onNavigate={handleNavigate} />}
+      </main>
+
+      <Footer onNavigate={handleNavigate} />
+    </div>
+  );
+}
