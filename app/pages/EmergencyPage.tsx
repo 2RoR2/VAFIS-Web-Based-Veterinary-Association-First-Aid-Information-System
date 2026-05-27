@@ -1,8 +1,9 @@
 import { Search, Filter, Grid, List } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { GuideCard } from '../components/cards/GuideCard';
 import { EmergencyBanner } from '../components/emergency/EmergencyBanner';
-import { guides, categories } from '../data/guides';
+import { useApiData } from '../hooks/useApiData';
+import { Guide } from '../types/content';
 
 interface EmergencyPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -16,15 +17,17 @@ export function EmergencyPage({ onNavigate, initialSpecies, initialSearch }: Eme
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
 
   const species = ['All', 'Dogs', 'Cats', 'Rabbits', 'Hamsters', 'Guinea Pigs', 'Birds'];
+  const categories = useMemo(() => ['All Categories', ...new Set(guides.map((guide) => guide.category))], [guides]);
 
   const filteredGuides = guides.filter((guide) => {
     const matchesSearch = guide.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guide.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSpecies = selectedSpecies === 'all' ||
-      guide.species.includes(selectedSpecies) ||
-      guide.species.includes('All');
+      guide.species.some((speciesName) => speciesName.toLowerCase() === selectedSpecies) ||
+      guide.species.some((speciesName) => speciesName.toLowerCase() === 'all');
     const matchesCategory = selectedCategory === 'All Categories' || guide.category === selectedCategory;
     const matchesSeverity = selectedSeverity === 'all' || guide.severity === selectedSeverity;
 
@@ -40,6 +43,14 @@ export function EmergencyPage({ onNavigate, initialSpecies, initialSearch }: Eme
             Step-by-step instructions for common pet emergencies. All guides are reviewed by veterinary professionals.
           </p>
         </div>
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load guides. {error}
+          </div>
+        )}
+        {loading && !error && (
+          <p className="mb-4 text-sm text-muted-foreground">Loading guides...</p>
+        )}
 
         <div className="mb-6">
           <EmergencyBanner onFindVet={() => onNavigate('clinics')} />

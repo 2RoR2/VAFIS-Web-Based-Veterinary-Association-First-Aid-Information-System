@@ -1,6 +1,8 @@
 import { CheckCircle, MessageSquare, Send, Star } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import videoTutorialImage from '../assets/video_tutorial.jpg';
+import { apiPost } from '../services/api';
+import { FeedbackItem } from '../types/content';
 
 interface FeedbackPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -9,15 +11,49 @@ interface FeedbackPageProps {
 }
 
 const contentTypes = ['First-aid guide', 'Quiz', 'Video', 'Clinic directory'];
+const contentTypeMap: Record<string, FeedbackItem['contentType']> = {
+  'First-aid guide': 'Guide',
+  'Clinic directory': 'Clinic Directory',
+  Quiz: 'Quiz',
+  Video: 'Video',
+  Guide: 'Guide',
+  'Clinic Directory': 'Clinic Directory',
+};
 
 export function FeedbackPage({ onNavigate, contentType = 'First-aid guide', contentTitle = '' }: FeedbackPageProps) {
   const [rating, setRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (rating === 0) return;
-    setSubmitted(true);
+    if (rating === 0 || isSubmitting) {
+      setSubmitError('Please select a rating before submitting.');
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const selectedType = String(form.get('contentType') || contentType);
+    const payload = {
+      contentType: contentTypeMap[selectedType] ?? 'Guide',
+      contentTitle: String(form.get('contentTitle') || contentTitle),
+      rating,
+      comment: String(form.get('comment') || ''),
+      submittedBy: 'Pet Owner',
+    };
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await apiPost('/feedback', payload);
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Unable to submit feedback.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -113,12 +149,15 @@ export function FeedbackPage({ onNavigate, contentType = 'First-aid guide', cont
 
                 <button
                   type="submit"
-                  disabled={rating === 0}
+                  disabled={rating === 0 || isSubmitting}
                   className="w-full bg-primary text-primary-foreground rounded-2xl px-5 py-3 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  Submit Feedback
+                  {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
                 </button>
+                {submitError && (
+                  <p className="mt-3 text-sm text-destructive">Unable to submit feedback. {submitError}</p>
+                )}
               </form>
             )}
           </section>

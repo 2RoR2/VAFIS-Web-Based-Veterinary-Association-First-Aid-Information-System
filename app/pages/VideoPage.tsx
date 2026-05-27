@@ -1,10 +1,11 @@
 import { Search, Filter, Eye, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { VideoCard } from '../components/cards/VideoCard';
-import { videos, videoCategories } from '../data/videos';
 import heroImage from '../assets/hero-pets-first-aid.png';
 import videoTutorialImage from '../assets/video_tutorial.jpg';
 import vetDashboardImage from '../assets/guided.jpg';
+import { useApiData } from '../hooks/useApiData';
+import { Video } from '../types/content';
 
 interface VideoPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -15,6 +16,7 @@ export function VideoPage({ onNavigate }: VideoPageProps) {
   const [selectedSpecies, setSelectedSpecies] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('All Videos');
   const [sortBy, setSortBy] = useState<'popular' | 'recent' | 'title'>('popular');
+  const { data: videos, loading, error } = useApiData<Video[]>('/videos', []);
 
   const species = ['All', 'Dogs', 'Cats', 'Rabbits', 'Birds', 'Guinea Pigs', 'Hamsters', 'All Pets'];
   const videoImages = [
@@ -22,6 +24,7 @@ export function VideoPage({ onNavigate }: VideoPageProps) {
     heroImage,
     vetDashboardImage,
   ];
+  const videoCategories = useMemo(() => ['All Videos', ...new Set(videos.map((video) => video.category))], [videos]);
 
   const filteredVideos = videos.filter((video) => {
     const matchesSearch = video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,6 +50,14 @@ export function VideoPage({ onNavigate }: VideoPageProps) {
             Watch step-by-step demonstrations of first-aid techniques from veterinary professionals.
           </p>
         </div>
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load videos. {error}
+          </div>
+        )}
+        {loading && !error && (
+          <p className="mb-4 text-sm text-muted-foreground">Loading videos...</p>
+        )}
 
         <div className="bg-white rounded-lg border border-border p-6 mb-6">
           <div className="flex flex-col gap-4">

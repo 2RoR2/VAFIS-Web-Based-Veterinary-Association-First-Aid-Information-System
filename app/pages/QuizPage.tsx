@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { QuizCard } from '../components/cards/QuizCard';
 import { CheckCircle, XCircle, RotateCcw, Filter, TrendingUp, Award } from 'lucide-react';
-import { quizzes, quizCategories } from '../data/quizzes';
+import { useApiData } from '../hooks/useApiData';
+import { Quiz } from '../types/content';
 
 interface QuizPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -17,8 +18,10 @@ export function QuizPage({ onNavigate }: QuizPageProps) {
   const [selectedSpecies, setSelectedSpecies] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('All Quizzes');
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
+  const { data: quizzes, loading, error } = useApiData<Quiz[]>('/quizzes', []);
 
   const species = ['All', 'Dogs', 'Cats', 'Rabbits', 'Guinea Pigs', 'Hamsters', 'Birds', 'All Pets'];
+  const quizCategories = useMemo(() => ['All Quizzes', ...new Set(quizzes.map((quiz) => quiz.category))], [quizzes]);
 
   const filteredQuizzes = quizzes.filter((quiz) => {
     const matchesSpecies = selectedSpecies === 'all' || quiz.species.toLowerCase() === selectedSpecies;
@@ -223,6 +226,14 @@ export function QuizPage({ onNavigate }: QuizPageProps) {
             Test your knowledge and reinforce your learning with interactive quizzes.
           </p>
         </div>
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load quizzes. {error}
+          </div>
+        )}
+        {loading && !error && (
+          <p className="mb-4 text-sm text-muted-foreground">Loading quizzes...</p>
+        )}
 
         <div className="bg-white rounded-lg border border-border p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-3">

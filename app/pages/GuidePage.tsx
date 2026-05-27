@@ -1,7 +1,9 @@
 import { AlertCircle, Clock, Calendar, ChevronRight, Star, MessageSquare, Play } from 'lucide-react';
 import { useState } from 'react';
 import { EmergencyBanner } from '../components/emergency/EmergencyBanner';
-import { guides } from '../data/guides';
+import { useApiData } from '../hooks/useApiData';
+import { apiPost } from '../services/api';
+import { Guide } from '../types/content';
 
 interface GuidePageProps {
   guideId: string;
@@ -12,8 +14,41 @@ export function GuidePage({ guideId, onNavigate }: GuidePageProps) {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
 
   const guide = guides.find((g) => g.id === guideId);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg border border-border p-8 text-center">
+            <p className="text-muted-foreground">Loading guide...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg border border-border p-8 text-center">
+            <p className="text-destructive">Unable to load guide. {error}</p>
+            <button
+              onClick={() => onNavigate('emergency')}
+              className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Back to Guides
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!guide) {
     return (
@@ -46,10 +81,29 @@ export function GuidePage({ guideId, onNavigate }: GuidePageProps) {
   };
 
   const handleSubmitFeedback = () => {
-    if (rating > 0) {
-      setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 3000);
-    }
+    if (rating === 0 || !guide || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    apiPost('/feedback', {
+      contentType: 'Guide',
+      contentTitle: guide.title,
+      rating,
+      comment: feedback,
+      submittedBy: 'Pet Owner',
+    })
+      .then(() => {
+        setSubmitted(true);
+        setTimeout(() => setSubmitted(false), 3000);
+        setFeedback('');
+      })
+      .catch((err) => {
+        setSubmitError(err instanceof Error ? err.message : 'Unable to submit feedback.');
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   };
 
   return (
@@ -208,13 +262,16 @@ export function GuidePage({ guideId, onNavigate }: GuidePageProps) {
                 className="w-full px-4 py-2 border border-input rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-ring mb-4"
                 rows={4}
               />
+              {submitError && (
+                <p className="text-sm text-destructive mb-3">Unable to submit feedback. {submitError}</p>
+              )}
               <button
                 onClick={handleSubmitFeedback}
-                disabled={rating === 0}
+                disabled={rating === 0 || isSubmitting}
                 className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <MessageSquare className="w-4 h-4" />
-                Submit Feedback
+                {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
               </button>
             </>
           )}

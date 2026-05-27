@@ -1,8 +1,9 @@
 import { MapPin, Search, Filter, Phone, AlertCircle, Star } from 'lucide-react';
 import { useState } from 'react';
 import { ClinicCard } from '../components/cards/ClinicCard';
-import { clinics, emergencyContacts } from '../data/clinics';
 import clinicImage from '../assets/clinic-location-care.png';
+import { useApiData } from '../hooks/useApiData';
+import { Clinic, EmergencyContact } from '../types/content';
 
 interface ClinicsPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -11,8 +12,12 @@ interface ClinicsPageProps {
 export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const { data: clinics, loading: clinicsLoading, error: clinicsError } = useApiData<Clinic[]>('/clinics', []);
+  const { data: emergencyContacts, loading: contactsLoading, error: contactsError } = useApiData<EmergencyContact[]>('/clinics/emergency-contacts', []);
+  const loadError = clinicsError || contactsError;
+  const isLoading = clinicsLoading || contactsLoading;
 
-  const getDirectionsUrl = (clinic: (typeof clinics)[number]) => {
+  const getDirectionsUrl = (clinic: Clinic) => {
     if (typeof clinic.lat === 'number' && typeof clinic.lng === 'number') {
       return `https://www.google.com/maps/dir/?api=1&destination=${clinic.lat},${clinic.lng}`;
     }
@@ -39,6 +44,14 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
           <h1 className="mb-2">Find a Veterinary Clinic</h1>
           <p className="text-muted-foreground">Locate emergency veterinary services and clinics near your location.</p>
         </div>
+        {loadError && (
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load clinic data. {loadError}
+          </div>
+        )}
+        {isLoading && !loadError && (
+          <p className="mb-4 text-sm text-muted-foreground">Loading clinics...</p>
+        )}
 
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 mb-6">
           <h3 className="text-destructive mb-3 flex items-center gap-2">

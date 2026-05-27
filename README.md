@@ -4,25 +4,15 @@ This repository contains a small React + Vite prototype for a Veterinary Associa
 
 If you're here to run or develop the prototype, this README gives a short, friendly orientation to what the app does and where to look.
 
-# Quick start
+# How to run
 
-1. Install dependencies:
-
-```bash
 npm install
-```
-
-2. Start the dev server:
-
-```bash
-npm run dev
-```
-
-3. Build for production (optional):
-
-```bash
-npm run build
-```
+open xampp mysql
+open mysql workbench
+open schema.sql and run it
+npm run db:seed
+npm run dev:server
+npm run dev:client
 
 # What this project contains
 

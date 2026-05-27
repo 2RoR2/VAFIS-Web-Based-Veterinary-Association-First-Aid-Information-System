@@ -20,13 +20,9 @@ import {
 } from 'lucide-react';
 import { GuideCard } from '../components/cards/GuideCard';
 import { ClinicCard } from '../components/cards/ClinicCard';
-import { guides } from '../data/guides';
-import { quizzes } from '../data/quizzes';
-import { videos } from '../data/videos';
-import { clinics } from '../data/clinics';
-import { auditLogs, notifications } from '../data/workflow';
-import { feedbackItems } from '../data/feedback';
 import clinicImage from '../assets/clinic-location-care.png';
+import { useApiData } from '../hooks/useApiData';
+import { AuditLogItem, Clinic, FeedbackItem, Guide, NotificationItem, Quiz, Video as VideoItem } from '../types/content';
 
 export interface PetProfile {
   id: string;
@@ -46,12 +42,13 @@ interface PetWorkflowPageProps extends WorkflowPageProps {
 
 const speciesOptions = ['Dogs', 'Cats', 'Rabbits', 'Hamsters', 'Guinea Pigs', 'Birds'];
 
-const draftGuides = guides.slice(0, 4).map((guide, index) => ({
+const buildDraftGuides = (guides: Guide[]) => guides.slice(0, 4).map((guide, index) => ({
   ...guide,
   status: index === 0 ? 'Pending Review' : index === 1 ? 'Revision Required' : 'Published',
 }));
 
 export function PetOwnerDashboard({ onNavigate, pets }: PetWorkflowPageProps) {
+  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
   const primaryPet = pets[0];
   const speciesGuides = primaryPet
     ? guides.filter((guide) => guide.species.includes(primaryPet.species) || guide.species.includes('All')).slice(0, 3)
@@ -76,6 +73,14 @@ export function PetOwnerDashboard({ onNavigate, pets }: PetWorkflowPageProps) {
             Manage Pets
           </button>
         </div>
+        {error && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load guides. {error}
+          </div>
+        )}
+        {loading && !error && (
+          <p className="mb-6 text-sm text-muted-foreground">Loading guides...</p>
+        )}
 
         <div className="grid lg:grid-cols-[1fr_360px] gap-6 mb-8">
           <section className="bg-white rounded-lg border border-border p-6">
@@ -210,9 +215,14 @@ export function PetProfilePage({ onNavigate, pets, onPetsChange }: PetWorkflowPa
 }
 
 export function SpeciesPage({ onNavigate, species = 'Dogs' }: WorkflowPageProps & { species?: string }) {
+  const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
+  const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);
+  const { data: quizzes, loading: quizzesLoading, error: quizzesError } = useApiData<Quiz[]>('/quizzes', []);
   const relatedGuides = guides.filter((guide) => guide.species.includes(species) || guide.species.includes('All'));
   const relatedVideos = videos.filter((video) => video.species === species || video.species === 'All Pets').slice(0, 6);
   const relatedQuizzes = quizzes.filter((quiz) => quiz.species === species || quiz.species === 'All Pets').slice(0, 4);
+  const loadError = guidesError || videosError || quizzesError;
+  const isLoading = guidesLoading || videosLoading || quizzesLoading;
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -222,6 +232,14 @@ export function SpeciesPage({ onNavigate, species = 'Dogs' }: WorkflowPageProps 
           <h1 className="mb-2">{species} First-Aid Resources</h1>
           <p className="text-muted-foreground">Guides, videos, and quizzes related to {species.toLowerCase()}.</p>
         </div>
+        {loadError && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load species resources. {loadError}
+          </div>
+        )}
+        {isLoading && !loadError && (
+          <p className="mb-6 text-sm text-muted-foreground">Loading species resources...</p>
+        )}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
           {relatedGuides.slice(0, 6).map((guide) => (
             <GuideCard key={guide.id} title={guide.title} severity={guide.severity} readTime={guide.readTime} description={guide.description} onClick={() => onNavigate('guide', { guideId: guide.id })} />
@@ -258,9 +276,19 @@ export function SpeciesPage({ onNavigate, species = 'Dogs' }: WorkflowPageProps 
 
 export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
   const [status, setStatus] = useState('Draft');
+  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
+  const draftGuides = useMemo(() => buildDraftGuides(guides), [guides]);
 
   return (
     <ManagementShell title="Manage First-Aid Guide" description="Create, edit, delete, save draft, and submit guides for veterinary review." onNavigate={onNavigate}>
+      {error && (
+        <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Unable to load guides. {error}
+        </div>
+      )}
+      {loading && !error && (
+        <p className="mb-6 text-sm text-muted-foreground">Loading guides...</p>
+      )}
       <form className="grid lg:grid-cols-[1fr_320px] gap-6" onSubmit={(event) => { event.preventDefault(); setStatus('Pending Review'); }}>
         <section className="bg-white rounded-lg border border-border p-6">
           <label className="block mb-4">Guide title<input className="mt-2" defaultValue="Rabbit Heatstroke Guide" /></label>
@@ -313,8 +341,18 @@ export function ManageQuizPage({ onNavigate }: WorkflowPageProps) {
 }
 
 export function ManageClinicPage({ onNavigate }: WorkflowPageProps) {
+  const { data: clinics, loading, error } = useApiData<Clinic[]>('/clinics', []);
+
   return (
     <ManagementShell title="Manage Vet Clinic" description="Add, edit, delete clinic details, opening hours, and emergency labels." onNavigate={onNavigate}>
+      {error && (
+        <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Unable to load clinics. {error}
+        </div>
+      )}
+      {loading && !error && (
+        <p className="mb-6 text-sm text-muted-foreground">Loading clinics...</p>
+      )}
       <div className="grid lg:grid-cols-[360px_1fr] gap-6">
         <form className="bg-white rounded-lg border border-border p-6">
           <label className="block mb-4">Clinic name<input className="mt-2" defaultValue="Kuching Emergency Veterinary Centre" /></label>
@@ -334,6 +372,8 @@ export function ManageClinicPage({ onNavigate }: WorkflowPageProps) {
 }
 
 export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
+  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
+  const draftGuides = useMemo(() => buildDraftGuides(guides), [guides]);
   const pending = draftGuides.filter((guide) => guide.status !== 'Published');
 
   return (
@@ -344,6 +384,14 @@ export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
           <h1 className="mb-2">Review Dashboard</h1>
           <p className="text-muted-foreground">Review submitted guide content, approve medically safe content, or request revisions.</p>
         </div>
+        {error && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load guides. {error}
+          </div>
+        )}
+        {loading && !error && (
+          <p className="mb-6 text-sm text-muted-foreground">Loading guides...</p>
+        )}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <Metric icon={ClipboardCheck} label="Pending Reviews" value={pending.length} />
           <Metric icon={CheckCircle} label="Approved This Month" value={6} />
@@ -372,6 +420,7 @@ export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
 
 export function ReviewGuidePage({ onNavigate, guideId = 'choking-emergency' }: WorkflowPageProps & { guideId?: string }) {
   const [decision, setDecision] = useState<string | null>(null);
+  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
   const guide = guides.find((item) => item.id === guideId) || guides[0];
 
   return (
@@ -381,8 +430,25 @@ export function ReviewGuidePage({ onNavigate, guideId = 'choking-emergency' }: W
           <h1 className="mb-2">Review Guide</h1>
           <p className="text-muted-foreground">Check clinical accuracy, leave comments, then approve or request changes.</p>
         </div>
-        <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-          <article className="bg-white rounded-lg border border-border p-6">
+        {error && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load guide. {error}
+          </div>
+        )}
+        {loading && !error && (
+          <p className="mb-6 text-sm text-muted-foreground">Loading guide...</p>
+        )}
+        {!guide && !loading && !error && (
+          <div className="rounded-lg border border-border bg-white p-6">
+            <p className="text-muted-foreground">Guide not found.</p>
+            <button onClick={() => onNavigate('professional-dashboard')} className="mt-4 text-primary hover:underline">
+              Back to review dashboard
+            </button>
+          </div>
+        )}
+        {guide && (
+          <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+            <article className="bg-white rounded-lg border border-border p-6">
             <h2 className="mb-2">{guide.title}</h2>
             <p className="text-muted-foreground mb-5">{guide.description}</p>
             <div className="space-y-3">
@@ -393,24 +459,35 @@ export function ReviewGuidePage({ onNavigate, guideId = 'choking-emergency' }: W
                 </div>
               ))}
             </div>
-          </article>
-          <aside className="bg-white rounded-lg border border-border p-6">
+            </article>
+            <aside className="bg-white rounded-lg border border-border p-6">
             <h2 className="mb-4">Review Decision</h2>
             <label className="block mb-4">Review comments<textarea rows={6} className="mt-2" placeholder="Add clinical notes or required corrections." /></label>
             <button onClick={() => setDecision('Approved')} className="w-full mb-3 px-4 py-2 bg-success text-success-foreground rounded-md">Approve</button>
             <button onClick={() => setDecision('Changes Requested')} className="w-full px-4 py-2 bg-warning text-warning-foreground rounded-md">Request Changes</button>
             {decision && <div className="mt-4 rounded-lg bg-secondary p-3 text-secondary-foreground">Decision saved: {decision}</div>}
             <button onClick={() => onNavigate('professional-dashboard')} className="mt-4 text-primary hover:underline">Back to review dashboard</button>
-          </aside>
-        </div>
+            </aside>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export function NotificationsPage({ onNavigate }: WorkflowPageProps) {
+  const { data: notifications, loading, error } = useApiData<NotificationItem[]>('/workflow/notifications', []);
+
   return (
     <SimpleListPage title="Notifications" description="Review alerts, revision messages, and approval status." onNavigate={onNavigate} icon={Bell}>
+      {error && (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Unable to load notifications. {error}
+        </div>
+      )}
+      {loading && !error && (
+        <p className="text-sm text-muted-foreground">Loading notifications...</p>
+      )}
       {notifications.map((item) => (
         <div key={item.id} className="bg-white border border-border rounded-lg p-4">
           <div className="flex items-start justify-between gap-4">
@@ -428,8 +505,18 @@ export function NotificationsPage({ onNavigate }: WorkflowPageProps) {
 }
 
 export function AuditLogPage({ onNavigate }: WorkflowPageProps) {
+  const { data: auditLogs, loading, error } = useApiData<AuditLogItem[]>('/workflow/audit-logs', []);
+
   return (
     <SimpleListPage title="Audit Log" description="Action history for content changes, review decisions, and approvals." onNavigate={onNavigate} icon={History}>
+      {error && (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Unable to load audit log. {error}
+        </div>
+      )}
+      {loading && !error && (
+        <p className="text-sm text-muted-foreground">Loading audit log...</p>
+      )}
       {auditLogs.map((item) => (
         <div key={item.id} className="bg-white border border-border rounded-lg p-4">
           <p className="text-sm text-muted-foreground">{item.timestamp}</p>
@@ -460,6 +547,11 @@ export function LogoutPage({ onConfirm, onCancel }: { onConfirm: () => void; onC
 }
 
 export function AdminWorkflowDashboard({ onNavigate }: WorkflowPageProps) {
+  const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
+  const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);
+  const { data: feedbackItems, loading: feedbackLoading, error: feedbackError } = useApiData<FeedbackItem[]>('/feedback', []);
+  const loadError = guidesError || videosError || feedbackError;
+  const isLoading = guidesLoading || videosLoading || feedbackLoading;
   const tools = [
     { title: 'Manage Guides', page: 'manage-guide', icon: FileText },
     { title: 'Manage Quizzes', page: 'manage-quiz', icon: BookOpen },
@@ -476,6 +568,14 @@ export function AdminWorkflowDashboard({ onNavigate }: WorkflowPageProps) {
           <h1 className="mb-2">Admin Workflow Dashboard</h1>
           <p className="text-muted-foreground">Choose a content management area and continue the publishing workflow.</p>
         </div>
+        {loadError && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load workflow metrics. {loadError}
+          </div>
+        )}
+        {isLoading && !loadError && (
+          <p className="mb-6 text-sm text-muted-foreground">Loading workflow metrics...</p>
+        )}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {tools.map((tool) => {
             const Icon = tool.icon;

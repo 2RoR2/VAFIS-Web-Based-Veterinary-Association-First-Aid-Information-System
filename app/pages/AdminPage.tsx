@@ -1,11 +1,8 @@
 import { Plus, FileText, Video, Brain, CheckCircle, Clock, Edit, Trash2, Users, Eye, Bell, History } from 'lucide-react';
 import { useState } from 'react';
-import { guides } from '../data/guides';
-import { videos } from '../data/videos';
-import { quizzes } from '../data/quizzes';
-import { auditLogs, notifications } from '../data/workflow';
-import { feedbackItems } from '../data/feedback';
 import vetDashboardImage from '../assets/guided.jpg';
+import { useApiData } from '../hooks/useApiData';
+import { AuditLogItem, FeedbackItem, Guide, NotificationItem, Quiz, Video as VideoItem } from '../types/content';
 
 interface AdminPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -13,6 +10,14 @@ interface AdminPageProps {
 
 export function AdminPage({ onNavigate }: AdminPageProps) {
   const [activeTab, setActiveTab] = useState<'guides' | 'videos' | 'quizzes'>('guides');
+  const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
+  const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);
+  const { data: quizzes, loading: quizzesLoading, error: quizzesError } = useApiData<Quiz[]>('/quizzes', []);
+  const { data: notifications, loading: notificationsLoading, error: notificationsError } = useApiData<NotificationItem[]>('/workflow/notifications', []);
+  const { data: auditLogs, loading: auditLogsLoading, error: auditLogsError } = useApiData<AuditLogItem[]>('/workflow/audit-logs', []);
+  const { data: feedbackItems, loading: feedbackLoading, error: feedbackError } = useApiData<FeedbackItem[]>('/feedback', []);
+  const hasLoading = guidesLoading || videosLoading || quizzesLoading || notificationsLoading || auditLogsLoading || feedbackLoading;
+  const loadError = guidesError || videosError || quizzesError || notificationsError || auditLogsError || feedbackError;
 
   const publishedGuides = guides.length;
   const publishedVideos = videos.length;
@@ -71,6 +76,14 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             />
           </div>
         </div>
+        {loadError && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Unable to load admin data. {loadError}
+          </div>
+        )}
+        {hasLoading && !loadError && (
+          <p className="mb-6 text-sm text-muted-foreground">Loading admin data...</p>
+        )}
 
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-5 rounded-lg border border-border">
