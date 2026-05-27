@@ -7,8 +7,9 @@ If you're here to run or develop the prototype, this README gives a short, frien
 # How to run
 
 npm install
+copy and paste the .env copy file and rename it to .env
 open xampp mysql
-open mysql workbench
+open mysql workbench and connect to localhost
 open schema.sql and run it
 npm run db:seed
 npm run dev:server
