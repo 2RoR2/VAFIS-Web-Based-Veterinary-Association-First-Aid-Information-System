@@ -55,8 +55,8 @@ try {
 
   for (const video of videos) {
     await connection.execute(
-      `INSERT INTO videos (id, title, duration, species, category, description, thumbnail, instructor, difficulty, views)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO videos (id, title, duration, species, category, description, thumbnail, instructor, difficulty, views, videoUrl, relatedGuideId)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         video.id,
         video.title,
@@ -68,6 +68,8 @@ try {
         video.instructor,
         video.difficulty,
         video.views,
+        video.videoUrl ?? null,
+        video.relatedGuideId ?? null,
       ],
     );
   }

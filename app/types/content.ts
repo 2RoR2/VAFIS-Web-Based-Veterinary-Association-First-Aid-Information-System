@@ -6,6 +6,8 @@ export interface GuideStep {
   image?: string;
 }
 
+export type GuideStatus = 'draft' | 'pending_review' | 'reviewed' | 'published' | 'revision_required' | 'archived';
+
 export interface Guide {
   id: string;
   title: string;
@@ -20,6 +22,15 @@ export interface Guide {
   warnings: string[];
   relatedVideos: string[];
   relatedGuides: string[];
+  // workflow fields
+  status?: GuideStatus;
+  createdBy?: string | null;
+  assignedVetId?: string | null;
+  reviewComments?: string | null;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  publishedAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface Video {
@@ -33,6 +44,8 @@ export interface Video {
   instructor: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   views: number;
+  videoUrl?: string | null;
+  relatedGuideId?: string | null;
 }
 
 export interface QuizQuestion {
@@ -72,6 +85,8 @@ export interface Clinic {
   reviews: number;
   lat?: number;
   lng?: number;
+  /** Returned by GET /clinics/nearby — actual computed distance from user's GPS position */
+  distanceKm?: number;
 }
 
 export interface EmergencyContact {
@@ -106,4 +121,16 @@ export interface AuditLogItem {
   action: string;
   target: string;
   timestamp: string;
+}
+
+export interface QuizResultItem {
+  id: string;
+  quizId: string;
+  userId: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  passed: boolean;
+  attemptDate: string;
+  quizTitle?: string;
 }

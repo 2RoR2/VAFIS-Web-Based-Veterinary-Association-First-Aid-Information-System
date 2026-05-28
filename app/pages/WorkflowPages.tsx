@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import {
   AlertCircle,
   Bell,
@@ -22,7 +22,8 @@ import { GuideCard } from '../components/cards/GuideCard';
 import { ClinicCard } from '../components/cards/ClinicCard';
 import clinicImage from '../assets/clinic-location-care.png';
 import { useApiData } from '../hooks/useApiData';
-import { AuditLogItem, Clinic, FeedbackItem, Guide, NotificationItem, Quiz, Video as VideoItem } from '../types/content';
+import { apiPost, apiPut } from '../services/api';
+import { AuditLogItem, Clinic, FeedbackItem, Guide, NotificationItem, Quiz, QuizResultItem, Video as VideoItem } from '../types/content';
 
 export interface PetProfile {
   id: string;
@@ -42,22 +43,14 @@ interface PetWorkflowPageProps extends WorkflowPageProps {
 
 const speciesOptions = ['Dogs', 'Cats', 'Rabbits', 'Hamsters', 'Guinea Pigs', 'Birds'];
 
-const buildDraftGuides = (guides: Guide[]) => guides.slice(0, 4).map((guide, index) => ({
-  ...guide,
-  status: index === 0 ? 'Pending Review' : index === 1 ? 'Revision Required' : 'Published',
-}));
 
 export function PetOwnerDashboard({ onNavigate, pets }: PetWorkflowPageProps) {
   const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
+  const { data: quizResults } = useApiData<QuizResultItem[]>('/quizzes/my-results', []);
   const primaryPet = pets[0];
   const speciesGuides = primaryPet
     ? guides.filter((guide) => guide.species.includes(primaryPet.species) || guide.species.includes('All')).slice(0, 3)
     : guides.slice(0, 3);
-
-  const quizHistory = [
-    { title: 'Dog First-Aid Basics', score: 80, status: 'Passed' },
-    { title: 'General Pet First-Aid', score: 58, status: 'Retake Suggested' },
-  ];
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -124,12 +117,18 @@ export function PetOwnerDashboard({ onNavigate, pets }: PetWorkflowPageProps) {
           <section className="bg-white rounded-lg border border-border p-6">
             <h2 className="mb-4">Quiz History</h2>
             <div className="space-y-3 mb-5">
-              {quizHistory.map((item) => (
-                <div key={item.title} className="border border-border rounded-lg p-3">
-                  <div className="font-medium">{item.title}</div>
-                  <div className="text-sm text-muted-foreground">{item.score}% - {item.status}</div>
-                </div>
-              ))}
+              {quizResults.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No quizzes taken yet. Start a quiz to track your progress!</p>
+              ) : (
+                quizResults.slice(0, 3).map((item) => (
+                  <div key={item.id} className="border border-border rounded-lg p-3">
+                    <div className="font-medium text-sm">{item.quizTitle ?? item.quizId}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {item.percentage}% — {item.passed ? 'Passed' : 'Retake Suggested'}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <button onClick={() => onNavigate('quiz')} className="w-full px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors">Open quizzes</button>
             <button onClick={() => onNavigate('clinics')} className="w-full mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">Find clinic</button>
@@ -275,36 +274,174 @@ export function SpeciesPage({ onNavigate, species = 'Dogs' }: WorkflowPageProps 
 }
 
 export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
-  const [status, setStatus] = useState('Draft');
-  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
-  const draftGuides = useMemo(() => buildDraftGuides(guides), [guides]);
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
+  const [selectedGuide, setSelectedGuide] = useState<Guide | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
+  const { data: guides, loading, error } = useApiData<Guide[]>(`/guides/admin?t=${refreshKey}`, []);
+
+  const refresh = () => setRefreshKey((k) => k + 1);
+
+  const readForm = () => {
+    const f = formRef.current;
+    if (!f) return null;
+    const d = new FormData(f);
+    return {
+      title: String(d.get('title') || '').trim(),
+      species: String(d.get('species') || 'Dogs'),
+      severity: String(d.get('severity') || 'high'),
+      instructions: String(d.get('instructions') || '').trim(),
+    };
+  };
+
+  const buildPayload = (parsed: NonNullable<ReturnType<typeof readForm>>) => ({
+    title: parsed.title,
+    species: [parsed.species],
+    severity: parsed.severity,
+    readTime: '5 min',
+    description: parsed.instructions.slice(0, 500),
+    category: 'Emergency',
+    steps: parsed.instructions.split('\n').filter(Boolean).map((line, i) => ({ number: i + 1, title: `Step ${i + 1}`, description: line })),
+    warnings: [],
+    relatedVideos: selectedGuide?.relatedVideos ?? [],
+    relatedGuides: selectedGuide?.relatedGuides ?? [],
+  });
+
+  const handleSaveDraft = async () => {
+    const parsed = readForm();
+    if (!parsed?.title) { setActionError('Guide title is required.'); return; }
+    setSaving(true); setActionError(''); setActionSuccess('');
+    try {
+      const saved = selectedGuide
+        ? await apiPut<Guide>(`/guides/${selectedGuide.id}`, buildPayload(parsed))
+        : await apiPost<Guide>('/guides', buildPayload(parsed));
+      setSelectedGuide(saved);
+      setActionSuccess(`"${saved.title}" saved as draft.`);
+      refresh();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to save draft.');
+    } finally { setSaving(false); }
+  };
+
+  const handleSubmitForReview = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setActionError(''); setActionSuccess('');
+    let guideId = selectedGuide?.id;
+
+    if (!guideId) {
+      const parsed = readForm();
+      if (!parsed?.title) { setActionError('Guide title is required.'); return; }
+      setSaving(true);
+      try {
+        const saved = await apiPost<Guide>('/guides', buildPayload(parsed));
+        guideId = saved.id;
+        setSelectedGuide(saved);
+        refresh();
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Failed to save guide.');
+        setSaving(false); return;
+      }
+      setSaving(false);
+    }
+
+    setSubmitting(true);
+    try {
+      const updated = await apiPost<Guide>(`/guides/${guideId}/submit`, {});
+      setSelectedGuide(updated);
+      setActionSuccess(`"${updated.title}" submitted for review.`);
+      refresh();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to submit for review.');
+    } finally { setSubmitting(false); }
+  };
+
+  const handlePublish = async () => {
+    if (!selectedGuide) return;
+    setPublishing(true); setActionError(''); setActionSuccess('');
+    try {
+      const updated = await apiPost<Guide>(`/guides/${selectedGuide.id}/publish`, {});
+      setSelectedGuide(updated);
+      setActionSuccess(`"${updated.title}" is now published and visible to pet owners.`);
+      refresh();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to publish guide.');
+    } finally { setPublishing(false); }
+  };
+
+  const handleUnpublish = async () => {
+    if (!selectedGuide) return;
+    setPublishing(true); setActionError(''); setActionSuccess('');
+    try {
+      const updated = await apiPost<Guide>(`/guides/${selectedGuide.id}/unpublish`, {});
+      setSelectedGuide(updated);
+      setActionSuccess(`"${updated.title}" has been unpublished.`);
+      refresh();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to unpublish guide.');
+    } finally { setPublishing(false); }
+  };
+
+  const selectGuide = (guide: Guide) => { setSelectedGuide(guide); setActionError(''); setActionSuccess(''); };
 
   return (
-    <ManagementShell title="Manage First-Aid Guide" description="Create, edit, delete, save draft, and submit guides for veterinary review." onNavigate={onNavigate}>
-      {error && (
-        <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          Unable to load guides. {error}
-        </div>
+    <ManagementShell title="Manage First-Aid Guide" description="Create, edit, and submit guides through the review workflow." onNavigate={onNavigate}>
+      {(error || actionError) && (
+        <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error ?? actionError}</div>
       )}
-      {loading && !error && (
-        <p className="mb-6 text-sm text-muted-foreground">Loading guides...</p>
+      {actionSuccess && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{actionSuccess}</div>
       )}
-      <form className="grid lg:grid-cols-[1fr_320px] gap-6" onSubmit={(event) => { event.preventDefault(); setStatus('Pending Review'); }}>
+      {loading && !error && <p className="mb-6 text-sm text-muted-foreground">Loading guides...</p>}
+
+      <form ref={formRef} key={selectedGuide?.id ?? 'new'} className="grid lg:grid-cols-[1fr_320px] gap-6" onSubmit={handleSubmitForReview}>
         <section className="bg-white rounded-lg border border-border p-6">
-          <label className="block mb-4">Guide title<input className="mt-2" defaultValue="Rabbit Heatstroke Guide" /></label>
-          <label className="block mb-4">Species<select className="mt-2" defaultValue="Rabbits">{speciesOptions.map((species) => <option key={species}>{species}</option>)}</select></label>
-          <label className="block mb-4">Severity<select className="mt-2" defaultValue="high"><option value="high">Seek Vet Now</option><option value="medium">Act Soon</option><option value="low">Monitor</option></select></label>
-          <label className="block mb-4">Instructions<textarea rows={8} className="mt-2" defaultValue="Move the rabbit to a cool area. Offer water only if alert. Contact an exotic animal veterinarian immediately." /></label>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setStatus('Draft')} className="px-4 py-2 border border-border rounded-md hover:bg-muted flex items-center gap-2"><Save className="w-4 h-4" />Save Draft</button>
-            <button type="submit" className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">Submit for Review</button>
+          <label className="block mb-4">Guide title<input name="title" className="mt-2" defaultValue={selectedGuide?.title ?? ''} required /></label>
+          <label className="block mb-4">Species<select name="species" className="mt-2" defaultValue={selectedGuide?.species[0] ?? 'Dogs'}>{speciesOptions.map((s) => <option key={s}>{s}</option>)}</select></label>
+          <label className="block mb-4">Severity<select name="severity" className="mt-2" defaultValue={selectedGuide?.severity ?? 'high'}><option value="high">Seek Vet Now</option><option value="medium">Act Soon</option><option value="low">Monitor</option></select></label>
+          <label className="block mb-4">Instructions<textarea name="instructions" rows={8} className="mt-2" defaultValue={selectedGuide?.steps.map((s) => s.description).join('\n') ?? ''} /></label>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" disabled={saving || !!selectedGuide?.status && !['draft', 'revision_required'].includes(selectedGuide.status)} onClick={handleSaveDraft} className="px-4 py-2 border border-border rounded-md hover:bg-muted flex items-center gap-2 disabled:opacity-60">
+              <Save className="w-4 h-4" />{saving ? 'Saving…' : 'Save Draft'}
+            </button>
+            <button type="submit" disabled={submitting || saving || (!!selectedGuide?.status && !['draft', 'revision_required'].includes(selectedGuide.status))} className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-60">
+              {submitting ? 'Submitting…' : 'Submit for Review'}
+            </button>
+            {selectedGuide?.status === 'reviewed' && (
+              <button type="button" disabled={publishing} onClick={handlePublish} className="px-4 py-2 bg-success text-success-foreground rounded-md hover:bg-success/90 disabled:opacity-60 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />{publishing ? 'Publishing…' : 'Publish'}
+              </button>
+            )}
+            {selectedGuide?.status === 'published' && (
+              <button type="button" disabled={publishing} onClick={handleUnpublish} className="px-4 py-2 border border-destructive text-destructive rounded-md hover:bg-destructive/10 disabled:opacity-60 flex items-center gap-2">
+                <XCircle className="w-4 h-4" />{publishing ? 'Unpublishing…' : 'Unpublish'}
+              </button>
+            )}
+            {selectedGuide && (
+              <button type="button" onClick={() => { setSelectedGuide(null); setActionError(''); setActionSuccess(''); }} className="px-4 py-2 border border-border rounded-md hover:bg-muted">
+                <Plus className="w-4 h-4 inline mr-1" />New
+              </button>
+            )}
           </div>
         </section>
         <aside className="bg-white rounded-lg border border-border p-6">
           <h2 className="mb-3">Guide Status</h2>
-          <div className="rounded-lg bg-secondary text-secondary-foreground px-3 py-2 mb-4">{status}</div>
-          <h3 className="mb-3">Existing Guides</h3>
-          <div className="space-y-2">{draftGuides.map((guide) => <div key={guide.id} className="text-sm border border-border rounded p-2">{guide.title}</div>)}</div>
+          <div className="rounded-lg bg-secondary text-secondary-foreground px-3 py-2 mb-4 capitalize">
+            {(selectedGuide?.status ?? 'new').replace(/_/g, ' ')}
+          </div>
+          <h3 className="mb-3">All Guides</h3>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {guides.map((guide) => (
+              <button key={guide.id} type="button" onClick={() => selectGuide(guide)}
+                className={`w-full text-left text-sm border rounded p-2 transition-colors ${selectedGuide?.id === guide.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
+                <div className="font-medium truncate">{guide.title}</div>
+                <div className="text-xs text-muted-foreground capitalize">{guide.status?.replace(/_/g, ' ')}</div>
+              </button>
+            ))}
+          </div>
         </aside>
       </form>
     </ManagementShell>
@@ -372,9 +509,9 @@ export function ManageClinicPage({ onNavigate }: WorkflowPageProps) {
 }
 
 export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
-  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
-  const draftGuides = useMemo(() => buildDraftGuides(guides), [guides]);
-  const pending = draftGuides.filter((guide) => guide.status !== 'Published');
+  const { data: guides, loading, error } = useApiData<Guide[]>('/guides/admin', []);
+  const pending = guides.filter((g) => g.status === 'pending_review');
+  const revisionRequired = guides.filter((g) => g.status === 'revision_required');
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -389,16 +526,17 @@ export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
             Unable to load guides. {error}
           </div>
         )}
-        {loading && !error && (
-          <p className="mb-6 text-sm text-muted-foreground">Loading guides...</p>
-        )}
+        {loading && !error && <p className="mb-6 text-sm text-muted-foreground">Loading guides...</p>}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
           <Metric icon={ClipboardCheck} label="Pending Reviews" value={pending.length} />
-          <Metric icon={CheckCircle} label="Approved This Month" value={6} />
-          <Metric icon={AlertCircle} label="Revision Requests" value={2} />
+          <Metric icon={CheckCircle} label="Published Guides" value={guides.filter((g) => g.status === 'published').length} />
+          <Metric icon={AlertCircle} label="Revision Required" value={revisionRequired.length} />
         </div>
         <div className="bg-white rounded-lg border border-border p-6">
           <h2 className="mb-4">Pending Review Guides</h2>
+          {pending.length === 0 && !loading && (
+            <p className="text-muted-foreground text-sm">No guides are currently pending review.</p>
+          )}
           <div className="space-y-3">
             {pending.map((guide) => (
               <button key={guide.id} onClick={() => onNavigate('review-guide', { guideId: guide.id })} className="w-full text-left border border-border rounded-lg p-4 hover:border-primary transition-colors">
@@ -407,7 +545,9 @@ export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
                     <h3>{guide.title}</h3>
                     <p className="text-sm text-muted-foreground">{guide.description}</p>
                   </div>
-                  <span className="text-xs bg-warning text-warning-foreground px-2 py-1 rounded">{guide.status}</span>
+                  <span className="text-xs bg-warning text-warning-foreground px-2 py-1 rounded capitalize">
+                    {guide.status?.replace(/_/g, ' ')}
+                  </span>
                 </div>
               </button>
             ))}
@@ -418,10 +558,26 @@ export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
   );
 }
 
-export function ReviewGuidePage({ onNavigate, guideId = 'choking-emergency' }: WorkflowPageProps & { guideId?: string }) {
+export function ReviewGuidePage({ onNavigate, guideId = '' }: WorkflowPageProps & { guideId?: string }) {
+  const [comments, setComments] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState('');
   const [decision, setDecision] = useState<string | null>(null);
-  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
-  const guide = guides.find((item) => item.id === guideId) || guides[0];
+  const { data: guide, loading, error } = useApiData<Guide | null>(`/guides/${guideId}`, null);
+
+  const submitReview = async (action: 'approve' | 'request_changes') => {
+    if (action === 'request_changes' && !comments.trim()) {
+      setActionError('Comments are required when requesting changes.');
+      return;
+    }
+    setSubmitting(true); setActionError('');
+    try {
+      await apiPost(`/guides/${guideId}/review`, { action, comments: comments.trim() || undefined });
+      setDecision(action === 'approve' ? 'Approved' : 'Changes Requested');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Submission failed.');
+    } finally { setSubmitting(false); }
+  };
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -430,43 +586,52 @@ export function ReviewGuidePage({ onNavigate, guideId = 'choking-emergency' }: W
           <h1 className="mb-2">Review Guide</h1>
           <p className="text-muted-foreground">Check clinical accuracy, leave comments, then approve or request changes.</p>
         </div>
-        {error && (
-          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            Unable to load guide. {error}
-          </div>
+        {(error || actionError) && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error ?? actionError}</div>
         )}
-        {loading && !error && (
-          <p className="mb-6 text-sm text-muted-foreground">Loading guide...</p>
-        )}
+        {loading && !error && <p className="mb-6 text-sm text-muted-foreground">Loading guide...</p>}
         {!guide && !loading && !error && (
           <div className="rounded-lg border border-border bg-white p-6">
             <p className="text-muted-foreground">Guide not found.</p>
-            <button onClick={() => onNavigate('professional-dashboard')} className="mt-4 text-primary hover:underline">
-              Back to review dashboard
-            </button>
+            <button onClick={() => onNavigate('professional-dashboard')} className="mt-4 text-primary hover:underline">Back to review dashboard</button>
           </div>
         )}
         {guide && (
           <div className="grid lg:grid-cols-[1fr_320px] gap-6">
             <article className="bg-white rounded-lg border border-border p-6">
-            <h2 className="mb-2">{guide.title}</h2>
-            <p className="text-muted-foreground mb-5">{guide.description}</p>
-            <div className="space-y-3">
-              {guide.steps.slice(0, 4).map((step) => (
-                <div key={step.number} className="border border-border rounded-lg p-4">
-                  <h3>{step.number}. {step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
-                </div>
-              ))}
-            </div>
+              <div className="flex items-center gap-3 mb-4">
+                <h2>{guide.title}</h2>
+                <span className="text-xs bg-warning text-warning-foreground px-2 py-1 rounded capitalize">{guide.status?.replace(/_/g, ' ')}</span>
+              </div>
+              <p className="text-muted-foreground mb-5">{guide.description}</p>
+              <div className="space-y-3">
+                {guide.steps.map((step) => (
+                  <div key={step.number} className="border border-border rounded-lg p-4">
+                    <h3>{step.number}. {step.title}</h3>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
+                  </div>
+                ))}
+              </div>
             </article>
             <aside className="bg-white rounded-lg border border-border p-6">
-            <h2 className="mb-4">Review Decision</h2>
-            <label className="block mb-4">Review comments<textarea rows={6} className="mt-2" placeholder="Add clinical notes or required corrections." /></label>
-            <button onClick={() => setDecision('Approved')} className="w-full mb-3 px-4 py-2 bg-success text-success-foreground rounded-md">Approve</button>
-            <button onClick={() => setDecision('Changes Requested')} className="w-full px-4 py-2 bg-warning text-warning-foreground rounded-md">Request Changes</button>
-            {decision && <div className="mt-4 rounded-lg bg-secondary p-3 text-secondary-foreground">Decision saved: {decision}</div>}
-            <button onClick={() => onNavigate('professional-dashboard')} className="mt-4 text-primary hover:underline">Back to review dashboard</button>
+              <h2 className="mb-4">Review Decision</h2>
+              {decision ? (
+                <div className="rounded-lg bg-secondary p-3 text-secondary-foreground mb-4">Decision submitted: <strong>{decision}</strong></div>
+              ) : (
+                <>
+                  <label className="block mb-4">
+                    Review comments
+                    <textarea rows={6} className="mt-2" value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Add clinical notes or required corrections." />
+                  </label>
+                  <button disabled={submitting} onClick={() => submitReview('approve')} className="w-full mb-3 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60">
+                    {submitting ? 'Submitting…' : 'Approve'}
+                  </button>
+                  <button disabled={submitting} onClick={() => submitReview('request_changes')} className="w-full px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 disabled:opacity-60">
+                    Request Changes
+                  </button>
+                </>
+              )}
+              <button onClick={() => onNavigate('professional-dashboard')} className="mt-4 text-primary hover:underline block">Back to review dashboard</button>
             </aside>
           </div>
         )}
@@ -547,7 +712,7 @@ export function LogoutPage({ onConfirm, onCancel }: { onConfirm: () => void; onC
 }
 
 export function AdminWorkflowDashboard({ onNavigate }: WorkflowPageProps) {
-  const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
+  const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides/admin', []);
   const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);
   const { data: feedbackItems, loading: feedbackLoading, error: feedbackError } = useApiData<FeedbackItem[]>('/feedback', []);
   const loadError = guidesError || videosError || feedbackError;

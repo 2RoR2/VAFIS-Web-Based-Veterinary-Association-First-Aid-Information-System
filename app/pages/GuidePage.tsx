@@ -16,9 +16,7 @@ export function GuidePage({ guideId, onNavigate }: GuidePageProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
-
-  const guide = guides.find((g) => g.id === guideId);
+  const { data: guide, loading, error } = useApiData<Guide | null>(`/guides/${guideId}`, null);
 
   if (loading) {
     return (

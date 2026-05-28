@@ -15,11 +15,22 @@ const roleLabels: Record<AuthUser['role'], string> = {
 };
 
 export function Header({ onNavigate, currentPage, currentUser, onLogout }: HeaderProps) {
+  const homePage =
+    currentUser?.role === 'administrator'
+      ? 'admin-workflow'
+      : currentUser?.role === 'veterinary-professional'
+      ? 'professional-dashboard'
+      : currentUser?.role === 'pet-owner'
+      ? 'pet-dashboard'
+      : 'home';
+
+  const homePages = ['home', 'admin-workflow', 'professional-dashboard', 'pet-dashboard'];
+
   return (
     <header className="bg-white/90 backdrop-blur border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate('home')}>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigate(homePage)}>
             <div className="paw-badge w-11 h-11 flex-shrink-0" aria-hidden="true">
               <span className="sr-only">VAFIS paw logo</span>
             </div>
@@ -31,9 +42,9 @@ export function Header({ onNavigate, currentPage, currentUser, onLogout }: Heade
 
           <nav className="hidden md:flex items-center gap-6">
             <button
-              onClick={() => onNavigate('home')}
+              onClick={() => onNavigate(homePage)}
               className={`px-3 py-2 rounded-md transition-colors ${
-                currentPage === 'home' ? 'bg-secondary text-secondary-foreground' : 'hover:bg-muted'
+                homePages.includes(currentPage) ? 'bg-secondary text-secondary-foreground' : 'hover:bg-muted'
               }`}
             >
               Home

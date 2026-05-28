@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
 import { EmergencyPage } from './pages/EmergencyPage';
 import { GuidePage } from './pages/GuidePage';
-import { VideoPage } from './pages/VideoPage';
+import { VideoPage, VideoPlayerPage } from './pages/VideoPage';
 import { QuizPage } from './pages/QuizPage';
 import { ClinicsPage } from './pages/ClinicsPage';
 import { AdminPage } from './pages/AdminPage';
-import { AuthPage, AuthUser } from './pages/AuthPage';
+import { AuthPage, AuthUser, UserRole } from './pages/AuthPage';
+import { authLogout, authMe, authRefresh } from './services/api';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { PrivacyPage, TermsPage } from './pages/PolicyPages';
 import {
@@ -32,6 +33,7 @@ type PageType =
   | 'emergency'
   | 'guide'
   | 'videos'
+  | 'video'
   | 'quiz'
   | 'clinics'
   | 'feedback'
@@ -62,6 +64,22 @@ export default function App() {
     { id: 'demo-pet-1', name: 'Milo', species: 'Cats', age: '4' },
   ]);
 
+  useEffect(() => {
+    const restoreSession = async () => {
+      let user = await authMe();
+
+      if (!user) {
+        user = await authRefresh();
+      }
+
+      if (user) {
+        setCurrentUser({ name: user.fullName, email: user.email, role: user.role as UserRole });
+      }
+    };
+
+    restoreSession();
+  }, []);
+
   const handleNavigate = (page: string, data?: any) => {
     const staffPages = [
       'admin',
@@ -88,6 +106,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    authLogout().catch(() => {});
     setCurrentUser(null);
     setCurrentPage('home');
     setPageData(null);
@@ -127,9 +146,10 @@ export default function App() {
         {currentPage === 'emergency' && <EmergencyPage onNavigate={handleNavigate} />}
         {currentPage === 'guide' && <GuidePage guideId={pageData?.guideId || 'choking-emergency'} onNavigate={handleNavigate} />}
         {currentPage === 'videos' && <VideoPage onNavigate={handleNavigate} />}
-        {currentPage === 'quiz' && <QuizPage onNavigate={handleNavigate} />}
+        {currentPage === 'video' && <VideoPlayerPage videoId={pageData?.videoId || ''} onNavigate={handleNavigate} />}
+        {currentPage === 'quiz' && <QuizPage onNavigate={handleNavigate} currentUser={currentUser} />}
         {currentPage === 'clinics' && <ClinicsPage onNavigate={handleNavigate} />}
-        {currentPage === 'feedback' && <FeedbackPage onNavigate={handleNavigate} contentType={pageData?.contentType} contentTitle={pageData?.contentTitle} />}
+        {currentPage === 'feedback' && <FeedbackPage onNavigate={handleNavigate} contentType={pageData?.contentType} contentTitle={pageData?.contentTitle} currentUser={currentUser} />}
         {currentPage === 'admin' && <AdminPage onNavigate={handleNavigate} />}
         {currentPage === 'admin-workflow' && <AdminWorkflowDashboard onNavigate={handleNavigate} />}
         {currentPage === 'login' && <AuthPage mode="login" onNavigate={handleNavigate} onAuthSuccess={handleAuthSuccess} />}

@@ -27,7 +27,9 @@ CREATE TABLE IF NOT EXISTS videos (
   thumbnail VARCHAR(64) NOT NULL,
   instructor VARCHAR(255) NOT NULL,
   difficulty ENUM('Beginner', 'Intermediate', 'Advanced') NOT NULL,
-  views INT NOT NULL DEFAULT 0
+  views INT NOT NULL DEFAULT 0,
+  videoUrl VARCHAR(500) NULL,
+  relatedGuideId VARCHAR(100) NULL
 );
 
 CREATE TABLE IF NOT EXISTS quizzes (
@@ -95,6 +97,17 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   action VARCHAR(255) NOT NULL,
   target VARCHAR(255) NOT NULL,
   timestamp VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS quiz_results (
+  id VARCHAR(64) PRIMARY KEY,
+  quizId VARCHAR(64) NOT NULL,
+  userId VARCHAR(64) NOT NULL,
+  score INT NOT NULL,
+  totalQuestions INT NOT NULL,
+  percentage INT NOT NULL,
+  passed TINYINT(1) NOT NULL DEFAULT 0,
+  attemptDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS users (

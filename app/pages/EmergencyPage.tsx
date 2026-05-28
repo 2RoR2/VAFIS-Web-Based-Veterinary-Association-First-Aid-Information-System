@@ -1,9 +1,26 @@
-import { Search, Filter, Grid, List } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { MapPin, Search, Filter, Grid, List } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { GuideCard } from '../components/cards/GuideCard';
 import { EmergencyBanner } from '../components/emergency/EmergencyBanner';
 import { useApiData } from '../hooks/useApiData';
 import { Guide } from '../types/content';
+
+const SPECIES_OPTIONS = ['All', 'Dogs', 'Cats', 'Rabbits', 'Hamsters', 'Guinea Pigs', 'Birds'];
+
+/** Build the search endpoint URL from active filter values. */
+const buildSearchUrl = (q: string, species: string, category: string, severity: string): string => {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set('q', q.trim());
+  if (species !== 'all') {
+    // Convert lowercase state value back to proper-cased DB value e.g. 'dogs' → 'Dogs'
+    const proper = SPECIES_OPTIONS.find((s) => s.toLowerCase() === species) ?? species;
+    params.set('species', proper);
+  }
+  if (category !== 'All Categories') params.set('category', category);
+  if (severity !== 'all') params.set('severity', severity);
+  const qs = params.toString();
+  return `/guides/search${qs ? `?${qs}` : ''}`;
+};
 
 interface EmergencyPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -13,26 +30,36 @@ interface EmergencyPageProps {
 
 export function EmergencyPage({ onNavigate, initialSpecies, initialSearch }: EmergencyPageProps) {
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch || '');
   const [selectedSpecies, setSelectedSpecies] = useState(initialSpecies?.toLowerCase() || 'all');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
 
-  const species = ['All', 'Dogs', 'Cats', 'Rabbits', 'Hamsters', 'Guinea Pigs', 'Birds'];
-  const categories = useMemo(() => ['All Categories', ...new Set(guides.map((guide) => guide.category))], [guides]);
+  // Debounce keyword so API is only called 400 ms after the user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  const filteredGuides = guides.filter((guide) => {
-    const matchesSearch = guide.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      guide.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSpecies = selectedSpecies === 'all' ||
-      guide.species.some((speciesName) => speciesName.toLowerCase() === selectedSpecies) ||
-      guide.species.some((speciesName) => speciesName.toLowerCase() === 'all');
-    const matchesCategory = selectedCategory === 'All Categories' || guide.category === selectedCategory;
-    const matchesSeverity = selectedSeverity === 'all' || guide.severity === selectedSeverity;
+  // Reset category when species changes — old category may not exist for the new species
+  useEffect(() => {
+    setSelectedCategory('All Categories');
+  }, [selectedSpecies]);
 
-    return matchesSearch && matchesSpecies && matchesCategory && matchesSeverity;
-  });
+  // The search URL encodes all active filters; useApiData re-fetches when it changes
+  const searchUrl = useMemo(
+    () => buildSearchUrl(debouncedSearch, selectedSpecies, selectedCategory, selectedSeverity),
+    [debouncedSearch, selectedSpecies, selectedCategory, selectedSeverity],
+  );
+
+  const { data: guides, loading, error } = useApiData<Guide[]>(searchUrl, []);
+
+  // Category options come from the current results (narrows with species/keyword filters)
+  const categories = useMemo(
+    () => ['All Categories', ...new Set(guides.map((g) => g.category))],
+    [guides],
+  );
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -94,7 +121,7 @@ export function EmergencyPage({ onNavigate, initialSpecies, initialSearch }: Eme
                   onChange={(e) => setSelectedSpecies(e.target.value)}
                   className="flex-1 px-4 py-2 border border-input rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {species.map((s) => (
+                  {SPECIES_OPTIONS.map((s) => (
                     <option key={s} value={s.toLowerCase()}>
                       Species: {s}
                     </option>
@@ -127,11 +154,11 @@ export function EmergencyPage({ onNavigate, initialSpecies, initialSearch }: Eme
         </div>
 
         <div className="mb-4 text-sm text-muted-foreground">
-          Showing {filteredGuides.length} of {guides.length} guides
+          {loading ? 'Searching…' : `${guides.length} guide${guides.length !== 1 ? 's' : ''} found`}
         </div>
 
         <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
-          {filteredGuides.map((guide) => (
+          {guides.map((guide) => (
             <GuideCard
               key={guide.id}
               title={guide.title}
@@ -143,20 +170,34 @@ export function EmergencyPage({ onNavigate, initialSpecies, initialSearch }: Eme
           ))}
         </div>
 
-        {filteredGuides.length === 0 && (
+        {guides.length === 0 && !loading && !error && (
           <div className="text-center py-12 bg-white rounded-lg border border-border">
-            <p className="text-muted-foreground mb-2">No guides found matching your filters</p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedSpecies('all');
-                setSelectedCategory('All Categories');
-                setSelectedSeverity('all');
-              }}
-              className="text-primary hover:underline"
-            >
-              Clear all filters
-            </button>
+            <p className="text-muted-foreground mb-2">No guides found matching your search</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Try different keywords or filters — or find a nearby clinic for immediate help.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setDebouncedSearch('');
+                  setSelectedSpecies('all');
+                  setSelectedCategory('All Categories');
+                  setSelectedSeverity('all');
+                }}
+                className="text-primary hover:underline"
+              >
+                Clear all filters
+              </button>
+              <span className="text-muted-foreground hidden sm:inline">or</span>
+              <button
+                onClick={() => onNavigate('clinics')}
+                className="flex items-center gap-2 px-5 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
+              >
+                <MapPin className="w-4 h-4" />
+                Find a Vet Clinic
+              </button>
+            </div>
           </div>
         )}
       </div>

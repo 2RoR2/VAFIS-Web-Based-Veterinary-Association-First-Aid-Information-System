@@ -1,6 +1,7 @@
-import { ShieldCheck, Sparkles, Stethoscope, UserRound } from 'lucide-react';
+import { ShieldCheck, Stethoscope, UserRound } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import heroImage from '../assets/hero-pets-first-aid.png';
+import { authLogin, authSignup } from '../services/api';
 
 export type UserRole = 'pet-owner' | 'veterinary-professional' | 'administrator';
 
@@ -40,21 +41,14 @@ const roles = [
 export function AuthPage({ mode, onNavigate, onAuthSuccess }: AuthPageProps) {
   const isSignup = mode === 'signup';
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const email = String(form.get('email') || 'user@vafis.local');
-    const roleFromEmail = (em: string): UserRole => {
-      const lower = em.toLowerCase();
-      if (lower.includes('admin')) return 'administrator';
-      if (lower.includes('vet')) return 'veterinary-professional';
-      if (lower.includes('owner')) return 'pet-owner';
-      return 'pet-owner';
-    };
-    const role = roleFromEmail(email);
-    const name = String(form.get('name') || roles.find((item) => item.id === role)?.title || 'VAFIS User');
-    const password = String(form.get('password') || '');
+    const email = String(form.get('email') ?? '').trim();
+    const password = String(form.get('password') ?? '');
+    const fullName = String(form.get('name') ?? '').trim();
 
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
@@ -62,17 +56,29 @@ export function AuthPage({ mode, onNavigate, onAuthSuccess }: AuthPageProps) {
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters for this prototype.');
+      setError('Password must be at least 6 characters.');
       return;
     }
 
-    if (!isSignup && password.toLowerCase() === 'wrong') {
-      setError('Login failed. Please check your email, password, and role.');
+    if (isSignup && !fullName) {
+      setError('Please enter your full name.');
       return;
     }
 
     setError('');
-    onAuthSuccess({ name, email, role });
+    setLoading(true);
+
+    try {
+      const result = isSignup
+        ? await authSignup(fullName, email, password)
+        : await authLogin(email, password);
+
+      onAuthSuccess({ name: result.user.fullName, email: result.user.email, role: result.user.role });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -135,8 +141,12 @@ export function AuthPage({ mode, onNavigate, onAuthSuccess }: AuthPageProps) {
 
                 {/* Role is inferred from demo credentials (email). No role selector shown. */}
 
-                <button type="submit" className="w-full bg-primary text-primary-foreground rounded-2xl px-5 py-3.5 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
-                  {isSignup ? 'Create account' : 'Log in'}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary text-primary-foreground rounded-2xl px-5 py-3.5 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Please wait…' : isSignup ? 'Create account' : 'Log in'}
                 </button>
 
                 <div className="mt-6 text-center text-sm text-muted-foreground">
