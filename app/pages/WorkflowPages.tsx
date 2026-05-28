@@ -1,4 +1,4 @@
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import {
   AlertCircle,
   Bell,
@@ -22,7 +22,7 @@ import { GuideCard } from '../components/cards/GuideCard';
 import { ClinicCard } from '../components/cards/ClinicCard';
 import clinicImage from '../assets/clinic-location-care.png';
 import { useApiData } from '../hooks/useApiData';
-import { apiPost, apiPut } from '../services/api';
+import { apiDelete, apiGet, apiPost, apiPut } from '../services/api';
 import { AuditLogItem, Clinic, FeedbackItem, Guide, NotificationItem, Quiz, QuizResultItem, Video as VideoItem } from '../types/content';
 
 export interface PetProfile {
@@ -36,17 +36,13 @@ interface WorkflowPageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
-interface PetWorkflowPageProps extends WorkflowPageProps {
-  pets: PetProfile[];
-  onPetsChange: (pets: PetProfile[]) => void;
-}
-
 const speciesOptions = ['Dogs', 'Cats', 'Rabbits', 'Hamsters', 'Guinea Pigs', 'Birds'];
 
 
-export function PetOwnerDashboard({ onNavigate, pets }: PetWorkflowPageProps) {
+export function PetOwnerDashboard({ onNavigate }: WorkflowPageProps) {
   const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
   const { data: quizResults } = useApiData<QuizResultItem[]>('/quizzes/my-results', []);
+  const { data: pets } = useApiData<PetProfile[]>('/pets', []);
   const primaryPet = pets[0];
   const speciesGuides = primaryPet
     ? guides.filter((guide) => guide.species.includes(primaryPet.species) || guide.species.includes('All')).slice(0, 3)
@@ -139,23 +135,55 @@ export function PetOwnerDashboard({ onNavigate, pets }: PetWorkflowPageProps) {
   );
 }
 
-export function PetProfilePage({ onNavigate, pets, onPetsChange }: PetWorkflowPageProps) {
+export function PetProfilePage({ onNavigate }: WorkflowPageProps) {
+  const [pets, setPets] = useState<PetProfile[]>([]);
+  const [loadingPets, setLoadingPets] = useState(true);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const editingPet = pets.find((pet) => pet.id === editingId);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const nextPet = {
-      id: editingId || crypto.randomUUID(),
-      name: String(form.get('name') || 'Unnamed Pet'),
-      species: String(form.get('species') || 'Dogs'),
-      age: String(form.get('age') || '1'),
-    };
+  useEffect(() => {
+    apiGet<PetProfile[]>('/pets')
+      .then(setPets)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load pets.'))
+      .finally(() => setLoadingPets(false));
+  }, []);
 
-    onPetsChange(editingId ? pets.map((pet) => (pet.id === editingId ? nextPet : pet)) : [...pets, nextPet]);
-    setEditingId(null);
-    event.currentTarget.reset();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const fd = new FormData(event.currentTarget);
+    const name = String(fd.get('name') || '').trim();
+    const species = String(fd.get('species') || 'Dogs');
+    const age = String(fd.get('age') || '').trim();
+    setSaving(true);
+    setError('');
+    try {
+      if (editingId) {
+        const updated = await apiPut<PetProfile>(`/pets/${editingId}`, { name, species, age });
+        setPets((prev) => prev.map((p) => (p.id === editingId ? updated : p)));
+      } else {
+        const created = await apiPost<PetProfile>('/pets', { name, species, age });
+        setPets((prev) => [...prev, created]);
+      }
+      setEditingId(null);
+      event.currentTarget.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save pet.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (petId: string) => {
+    setError('');
+    try {
+      await apiDelete<{ message: string }>(`/pets/${petId}`);
+      setPets((prev) => prev.filter((p) => p.id !== petId));
+      if (editingId === petId) setEditingId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete pet.');
+    }
   };
 
   return (
@@ -166,8 +194,12 @@ export function PetProfilePage({ onNavigate, pets, onPetsChange }: PetWorkflowPa
           <p className="text-muted-foreground">Add pets so emergency searches and species content can be filtered faster.</p>
         </div>
 
+        {error && (
+          <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>
+        )}
+
         <div className="grid lg:grid-cols-[360px_1fr] gap-6">
-          <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-border p-6">
+          <form key={editingId ?? 'new'} onSubmit={handleSubmit} className="bg-white rounded-lg border border-border p-6">
             <h2 className="mb-4">{editingPet ? 'Edit Pet' : 'Add Pet'}</h2>
             <label className="block mb-4">
               Pet name
@@ -183,28 +215,37 @@ export function PetProfilePage({ onNavigate, pets, onPetsChange }: PetWorkflowPa
               Age
               <input name="age" defaultValue={editingPet?.age} className="mt-2" placeholder="Example: 3" required />
             </label>
-            <button type="submit" className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-              {editingPet ? 'Save Changes' : 'Save Pet'}
+            <button type="submit" disabled={saving} className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50">
+              {saving ? 'Saving…' : editingPet ? 'Save Changes' : 'Save Pet'}
             </button>
+            {editingId && (
+              <button type="button" onClick={() => setEditingId(null)} className="w-full mt-2 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors">
+                Cancel Edit
+              </button>
+            )}
           </form>
 
           <section className="bg-white rounded-lg border border-border p-6">
             <h2 className="mb-4">Saved Pets</h2>
-            <div className="space-y-3">
-              {pets.map((pet) => (
-                <div key={pet.id} className="border border-border rounded-lg p-4 flex items-center justify-between gap-4">
-                  <div>
-                    <h3>{pet.name}</h3>
-                    <p className="text-sm text-muted-foreground">{pet.species} - {pet.age} years old</p>
+            {loadingPets ? (
+              <p className="text-sm text-muted-foreground">Loading pets...</p>
+            ) : (
+              <div className="space-y-3">
+                {pets.map((pet) => (
+                  <div key={pet.id} className="border border-border rounded-lg p-4 flex items-center justify-between gap-4">
+                    <div>
+                      <h3>{pet.name}</h3>
+                      <p className="text-sm text-muted-foreground">{pet.species} - {pet.age} years old</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditingId(pet.id)} className="p-2 hover:bg-muted rounded-md" aria-label="Edit pet"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(pet.id)} className="p-2 hover:bg-muted rounded-md" aria-label="Delete pet"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => setEditingId(pet.id)} className="p-2 hover:bg-muted rounded-md" aria-label="Edit pet"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => onPetsChange(pets.filter((item) => item.id !== pet.id))} className="p-2 hover:bg-muted rounded-md" aria-label="Delete pet"><Trash2 className="w-4 h-4 text-destructive" /></button>
-                  </div>
-                </div>
-              ))}
-              {pets.length === 0 && <p className="text-muted-foreground">No pet profiles yet.</p>}
-            </div>
+                ))}
+                {pets.length === 0 && <p className="text-muted-foreground">No pet profiles yet.</p>}
+              </div>
+            )}
             <button onClick={() => onNavigate('pet-dashboard')} className="mt-6 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors">Back to dashboard</button>
           </section>
         </div>

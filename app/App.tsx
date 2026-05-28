@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Header } from './components/layout/Header';
+import { AdminHeader } from './components/layout/AdminHeader';
+import { VetHeader } from './components/layout/VetHeader';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
 import { EmergencyPage } from './pages/EmergencyPage';
@@ -9,9 +11,22 @@ import { QuizPage } from './pages/QuizPage';
 import { ClinicsPage } from './pages/ClinicsPage';
 import { AdminPage } from './pages/AdminPage';
 import { AuthPage, AuthUser, UserRole } from './pages/AuthPage';
-import { authLogout, authMe, authRefresh } from './services/api';
+import { authLogout, authMe, authRefresh, setSessionExpiredHandler } from './services/api';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { PrivacyPage, TermsPage } from './pages/PolicyPages';
+import { ReviewQueuePage } from './pages/vet_professional/reviewqueue';
+import { VetReviewGuidePage } from './pages/vet_professional/reviewguide';
+import { ReviewHistoryPage } from './pages/vet_professional/reviewhistory';
+import { VetVideoListPage, VetEditVideoPage } from './pages/vet_professional/videomanagement';
+import { VetProfilePage } from './pages/vet_professional/vet_profile';
+import { PetOwnerProfilePage } from './pages/pet_owner/PetOwnerProfile';
+import { ManageGuideListPage } from './pages/vet_admin/manageguide';
+import { CreateGuidePage } from './pages/vet_admin/CreateGuide';
+import { EditGuidePage } from './pages/vet_admin/EditGuide';
+import { GuideDetailPage } from './pages/vet_admin/GuideDetail';
+import { ApproveGuidePage } from './pages/vet_admin/ApproveGuide';
+import { ManageVideoListPage } from './pages/vet_admin/managevideo';
+import { AddEditVideoPage } from './pages/vet_admin/AddEditVideo';
 import {
   AdminWorkflowDashboard,
   AuditLogPage,
@@ -21,10 +36,8 @@ import {
   ManageQuizPage,
   NotificationsPage,
   PetOwnerDashboard,
-  PetProfile,
   PetProfilePage,
   ProfessionalDashboard,
-  ReviewGuidePage,
   SpeciesPage,
 } from './pages/WorkflowPages';
 
@@ -54,17 +67,37 @@ type PageType =
   | 'audit-log'
   | 'logout'
   | 'terms'
-  | 'privacy';
+  | 'privacy'
+  | 'admin-guide-list'
+  | 'admin-guide-create'
+  | 'admin-guide-edit'
+  | 'admin-guide-detail'
+  | 'admin-guide-approve'
+  | 'admin-video-list'
+  | 'admin-video-add'
+  | 'admin-video-edit'
+  | 'vet-review-queue'
+  | 'vet-review-history'
+  | 'vet-videos'
+  | 'vet-video-edit'
+  | 'vet-profile'
+  | 'pet-owner-profile';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [pageData, setPageData] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [pets, setPets] = useState<PetProfile[]>([
-    { id: 'demo-pet-1', name: 'Milo', species: 'Cats', age: '4' },
-  ]);
 
   useEffect(() => {
+    // When BOTH the access token and refresh token are expired, the API layer
+    // calls this handler to clear React state and send the user to login.
+    setSessionExpiredHandler(() => {
+      setCurrentUser(null);
+      setCurrentPage('login');
+      setPageData(null);
+      window.scrollTo(0, 0);
+    });
+
     const restoreSession = async () => {
       let user = await authMe();
 
@@ -91,6 +124,19 @@ export default function App() {
       'review-guide',
       'notifications',
       'audit-log',
+      'admin-guide-list',
+      'admin-guide-create',
+      'admin-guide-edit',
+      'admin-guide-detail',
+      'admin-guide-approve',
+      'admin-video-list',
+      'admin-video-add',
+      'admin-video-edit',
+      'vet-review-queue',
+      'vet-review-history',
+      'vet-videos',
+      'vet-video-edit',
+      'vet-profile',
     ];
 
     if (staffPages.includes(page) && (!currentUser || currentUser.role === 'pet-owner')) {
@@ -104,6 +150,8 @@ export default function App() {
     setPageData(data || null);
     window.scrollTo(0, 0);
   };
+
+  const handleUserUpdate = (user: AuthUser) => setCurrentUser(user);
 
   const handleLogout = () => {
     authLogout().catch(() => {});
@@ -139,7 +187,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header onNavigate={handleNavigate} currentPage={currentPage} currentUser={currentUser} onLogout={handleLogout} />
+      {currentUser?.role === 'administrator' ? (
+        <AdminHeader onNavigate={handleNavigate} currentPage={currentPage} currentUser={currentUser} onLogout={handleLogout} />
+      ) : currentUser?.role === 'veterinary-professional' ? (
+        <VetHeader onNavigate={handleNavigate} currentPage={currentPage} currentUser={currentUser} onLogout={handleLogout} />
+      ) : (
+        <Header onNavigate={handleNavigate} currentPage={currentPage} currentUser={currentUser} onLogout={handleLogout} />
+      )}
 
       <main className="flex-1">
         {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
@@ -156,18 +210,32 @@ export default function App() {
         {currentPage === 'signup' && <AuthPage mode="signup" onNavigate={handleNavigate} onAuthSuccess={handleAuthSuccess} />}
         {currentPage === 'search' && <EmergencyPage onNavigate={handleNavigate} initialSpecies={pageData?.species} initialSearch={pageData?.search} />}
         {currentPage === 'species' && <SpeciesPage onNavigate={handleNavigate} species={pageData?.species || 'Dogs'} />}
-        {currentPage === 'pet-dashboard' && <PetOwnerDashboard onNavigate={handleNavigate} pets={pets} onPetsChange={setPets} />}
-        {currentPage === 'pet-profile' && <PetProfilePage onNavigate={handleNavigate} pets={pets} onPetsChange={setPets} />}
+        {currentPage === 'pet-dashboard' && <PetOwnerDashboard onNavigate={handleNavigate} />}
+        {currentPage === 'pet-profile' && <PetProfilePage onNavigate={handleNavigate} />}
+        {currentPage === 'pet-owner-profile' && <PetOwnerProfilePage onNavigate={handleNavigate} currentUser={currentUser} onUserUpdate={handleUserUpdate} />}
         {currentPage === 'manage-guide' && <ManageGuidePage onNavigate={handleNavigate} />}
         {currentPage === 'manage-quiz' && <ManageQuizPage onNavigate={handleNavigate} />}
         {currentPage === 'manage-clinic' && <ManageClinicPage onNavigate={handleNavigate} />}
         {currentPage === 'professional-dashboard' && <ProfessionalDashboard onNavigate={handleNavigate} />}
-        {currentPage === 'review-guide' && <ReviewGuidePage onNavigate={handleNavigate} guideId={pageData?.guideId} />}
+        {currentPage === 'vet-review-queue' && <ReviewQueuePage onNavigate={handleNavigate} />}
+        {currentPage === 'vet-review-history' && <ReviewHistoryPage onNavigate={handleNavigate} currentUser={currentUser} />}
+        {currentPage === 'vet-videos' && <VetVideoListPage onNavigate={handleNavigate} currentUser={currentUser} />}
+        {currentPage === 'vet-video-edit' && <VetEditVideoPage onNavigate={handleNavigate} videoId={pageData?.videoId} />}
+        {currentPage === 'vet-profile' && <VetProfilePage onNavigate={handleNavigate} currentUser={currentUser} onUserUpdate={handleUserUpdate} />}
+        {currentPage === 'review-guide' && <VetReviewGuidePage onNavigate={handleNavigate} guideId={pageData?.guideId} />}
         {currentPage === 'notifications' && <NotificationsPage onNavigate={handleNavigate} />}
         {currentPage === 'audit-log' && <AuditLogPage onNavigate={handleNavigate} />}
         {currentPage === 'logout' && <LogoutPage onConfirm={handleLogout} onCancel={() => handleNavigate(currentUser?.role === 'pet-owner' ? 'pet-dashboard' : 'admin-workflow')} />}
         {currentPage === 'terms' && <TermsPage onNavigate={handleNavigate} />}
         {currentPage === 'privacy' && <PrivacyPage onNavigate={handleNavigate} />}
+        {currentPage === 'admin-guide-list' && <ManageGuideListPage onNavigate={handleNavigate} />}
+        {currentPage === 'admin-guide-create' && <CreateGuidePage onNavigate={handleNavigate} />}
+        {currentPage === 'admin-guide-edit' && <EditGuidePage onNavigate={handleNavigate} guideId={pageData?.guideId} />}
+        {currentPage === 'admin-guide-detail' && <GuideDetailPage onNavigate={handleNavigate} guideId={pageData?.guideId} />}
+        {currentPage === 'admin-guide-approve' && <ApproveGuidePage onNavigate={handleNavigate} guideId={pageData?.guideId} />}
+        {currentPage === 'admin-video-list' && <ManageVideoListPage onNavigate={handleNavigate} />}
+        {currentPage === 'admin-video-add' && <AddEditVideoPage onNavigate={handleNavigate} />}
+        {currentPage === 'admin-video-edit' && <AddEditVideoPage onNavigate={handleNavigate} videoId={pageData?.videoId} />}
       </main>
 
       <Footer onNavigate={handleNavigate} />

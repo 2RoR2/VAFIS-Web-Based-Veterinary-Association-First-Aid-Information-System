@@ -13,6 +13,12 @@ import { createQuizRouter } from '../backend/src/routes/quiz.js';
 import { createLocationRouter } from '../backend/src/routes/location.js';
 // @ts-ignore
 import { createFeedbackRouter } from '../backend/src/routes/feedback.js';
+// @ts-ignore
+import { createUserRouter } from '../backend/src/routes/user.js';
+// @ts-ignore
+import { createVideosRouter } from '../backend/src/routes/videos.js';
+// @ts-ignore
+import { createPetsRouter } from '../backend/src/routes/pets.js';
 
 dotenv.config();
 
@@ -39,41 +45,18 @@ const asyncHandler = (handler: (req: express.Request, res: express.Response, nex
     handler(req, res, next).catch(next);
   };
 
-const mapVideo = (row: any) => ({
-  id: row.id,
-  title: row.title,
-  duration: row.duration,
-  species: row.species,
-  category: row.category,
-  description: row.description,
-  thumbnail: row.thumbnail,
-  instructor: row.instructor,
-  difficulty: row.difficulty,
-  views: Number(row.views ?? 0),
-  videoUrl: row.videoUrl ?? null,
-  relatedGuideId: row.relatedGuideId ?? null,
-});
-
 app.use('/api/auth', createAuthRouter(pool));
 app.use('/api/guides', createGuidesRouter(pool));
 app.use('/api/quizzes', createQuizRouter(pool));
 app.use('/api/clinics', createLocationRouter(pool));
 app.use('/api/feedback', createFeedbackRouter(pool));
+app.use('/api/user', createUserRouter(pool));
+app.use('/api/videos', createVideosRouter(pool));
+app.use('/api/pets', createPetsRouter(pool));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
-
-app.get('/api/videos', asyncHandler(async (_req, res) => {
-  const [rows] = await pool.query('SELECT * FROM videos');
-  res.json((rows as any[]).map(mapVideo));
-}));
-
-app.get('/api/videos/:id', asyncHandler(async (req, res) => {
-  const [rows] = await pool.query('SELECT * FROM videos WHERE id = ?', [req.params.id]);
-  if (!(rows as any[]).length) { res.status(404).json({ error: 'Video not found.' }); return; }
-  res.json(mapVideo((rows as any[])[0]));
-}));
 
 app.get('/api/workflow/notifications', asyncHandler(async (_req, res) => {
   const [rows] = await pool.query('SELECT * FROM notifications');

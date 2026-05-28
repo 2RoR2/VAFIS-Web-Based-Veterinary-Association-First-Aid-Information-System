@@ -3,3 +3,9 @@ dist/
 .env
 .env.local
 .DS_Store
+
+# Ignore Claude folder
+.claude/
+
+# Ignore Claude markdown file
+CLAUDE.md

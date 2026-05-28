@@ -97,7 +97,7 @@ export function Header({ onNavigate, currentPage, currentUser, onLogout }: Heade
             {currentUser ? (
               <div className="hidden md:flex items-center gap-2">
                 <button
-                  onClick={() => onNavigate(currentUser.role === 'pet-owner' ? 'pet-dashboard' : currentUser.role === 'veterinary-professional' ? 'professional-dashboard' : 'admin-workflow')}
+                  onClick={() => onNavigate(currentUser.role === 'pet-owner' ? 'pet-owner-profile' : currentUser.role === 'veterinary-professional' ? 'professional-dashboard' : 'admin-workflow')}
                   className="px-3 py-2 bg-secondary text-secondary-foreground rounded-full text-sm"
                 >
                   {roleLabels[currentUser.role]}

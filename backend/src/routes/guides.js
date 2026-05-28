@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import {
+  archiveGuide,
   createGuide,
   deleteGuide,
   getAdminGuides,
@@ -40,6 +41,9 @@ export const createGuidesRouter = (pool) => {
   router.post('/:id/submit', requireAuth, requireRole('admin'), asyncHandler(submitForReview(pool)));
   router.post('/:id/publish', requireAuth, requireRole('admin'), asyncHandler(publishGuide(pool)));
   router.post('/:id/unpublish', requireAuth, requireRole('admin'), asyncHandler(unpublishGuide(pool)));
+
+  // Admin — archive
+  router.post('/:id/archive', requireAuth, requireRole('admin'), asyncHandler(archiveGuide(pool)));
 
   // Vet — review
   router.post('/:id/review', requireAuth, requireRole('professional'), asyncHandler(reviewGuide(pool)));

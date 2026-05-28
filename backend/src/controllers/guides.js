@@ -329,6 +329,32 @@ export const publishGuide = (pool) => async (req, res) => {
   res.json(mapGuide(updated[0]));
 };
 
+export const archiveGuide = (pool) => async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM guides WHERE id = ?', [req.params.id]);
+  const guide = rows[0];
+
+  if (!guide) {
+    res.status(404).json({ error: 'Guide not found.' });
+    return;
+  }
+
+  if (guide.status === 'archived') {
+    res.status(409).json({ error: 'Guide is already archived.' });
+    return;
+  }
+
+  if (guide.status === 'pending_review') {
+    res.status(409).json({ error: 'Cannot archive a guide that is pending review.' });
+    return;
+  }
+
+  await pool.execute(`UPDATE guides SET status = 'archived' WHERE id = ?`, [req.params.id]);
+  await logAudit(pool, req.user.email, 'GUIDE_ARCHIVED', guide.title);
+
+  const [updated] = await pool.query('SELECT * FROM guides WHERE id = ?', [req.params.id]);
+  res.json(mapGuide(updated[0]));
+};
+
 export const unpublishGuide = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM guides WHERE id = ?', [req.params.id]);
   const guide = rows[0];
