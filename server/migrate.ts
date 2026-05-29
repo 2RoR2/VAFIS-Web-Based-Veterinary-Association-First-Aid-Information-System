@@ -65,6 +65,51 @@ try {
     console.log(`  Marked ${result.affectedRows} existing guide(s) as published.`);
   }
 
+  // isSuspended flag for users
+  await addColumnIfMissing('users', 'isSuspended', 'isSuspended TINYINT(1) NOT NULL DEFAULT 0');
+
+  // Per-question answers for quiz results (enables full review)
+  await addColumnIfMissing('quiz_results', 'userAnswers', 'userAnswers JSON NULL');
+
+  // MFA columns
+  await addColumnIfMissing('users', 'mfaEnabled',   'mfaEnabled   TINYINT(1) NOT NULL DEFAULT 0');
+  await addColumnIfMissing('users', 'mfaOtpCode',   'mfaOtpCode   VARCHAR(6) NULL');
+  await addColumnIfMissing('users', 'mfaOtpExpiry', 'mfaOtpExpiry DATETIME   NULL');
+
+  // categories table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id          VARCHAR(64)  PRIMARY KEY,
+      name        VARCHAR(255) NOT NULL UNIQUE,
+      description TEXT         NULL
+    )
+  `);
+  console.log('  ✓ categories table');
+
+  // emergency_scenarios table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS emergency_scenarios (
+      id          VARCHAR(64)                        PRIMARY KEY,
+      name        VARCHAR(255)                       NOT NULL,
+      species     JSON                               NOT NULL,
+      severity    ENUM('low', 'medium', 'high')      NOT NULL,
+      description TEXT                               NULL
+    )
+  `);
+  console.log('  ✓ emergency_scenarios table');
+
+  // species table
+  await connection.execute(`
+    CREATE TABLE IF NOT EXISTS species (
+      id                VARCHAR(64)  PRIMARY KEY,
+      name              VARCHAR(255) NOT NULL,
+      icon              VARCHAR(64)  NOT NULL DEFAULT '',
+      description       TEXT         NULL,
+      commonEmergencies JSON         NOT NULL
+    )
+  `);
+  console.log('  ✓ species table');
+
   console.log('Migration complete.');
 } catch (error) {
   console.error('Migration failed.', error);

@@ -26,6 +26,28 @@ export function getStatusClasses(status: string): string {
   }
 }
 
+export const QUIZ_STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  scheduled: 'Scheduled',
+  published: 'Published',
+  archived: 'Archived',
+};
+
+export function getQuizStatusClasses(status: string): string {
+  switch (status) {
+    case 'published':
+      return 'bg-success text-success-foreground';
+    case 'scheduled':
+      return 'bg-warning/20 text-warning';
+    case 'draft':
+      return 'bg-muted text-muted-foreground';
+    case 'archived':
+      return 'bg-muted/80 text-muted-foreground';
+    default:
+      return 'bg-muted text-muted-foreground';
+  }
+}
+
 export function getSeverityClasses(severity: string): string {
   switch (severity) {
     case 'high':   return 'bg-destructive/15 text-destructive';

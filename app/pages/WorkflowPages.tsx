@@ -127,6 +127,11 @@ export function PetOwnerDashboard({ onNavigate }: WorkflowPageProps) {
               )}
             </div>
             <button onClick={() => onNavigate('quiz')} className="w-full px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors">Open quizzes</button>
+            {quizResults.length > 0 && (
+              <button onClick={() => onNavigate('pet-quiz-history')} className="w-full mt-2 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors text-sm text-primary">
+                View full quiz history
+              </button>
+            )}
             <button onClick={() => onNavigate('clinics')} className="w-full mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">Find clinic</button>
           </section>
         </div>

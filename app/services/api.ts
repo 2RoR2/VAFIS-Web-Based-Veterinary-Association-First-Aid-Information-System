@@ -49,7 +49,7 @@ const attemptTokenRefresh = (): Promise<boolean> => {
 
 // Paths where a 401 should NOT trigger an auto-refresh attempt
 // (login / signup / logout / refresh itself — these are auth actions, not resource calls)
-const SKIP_REFRESH_PATHS = ['/auth/login', '/auth/signup', '/auth/logout', '/auth/refresh'];
+const SKIP_REFRESH_PATHS = ['/auth/login', '/auth/signup', '/auth/logout', '/auth/refresh', '/auth/mfa/verify'];
 const shouldSkipRefresh = (path: string) =>
   SKIP_REFRESH_PATHS.some((p) => path.includes(p));
 
@@ -150,8 +150,16 @@ export interface AuthResponse {
   user: SessionUser;
 }
 
+export interface MfaRequiredResponse {
+  mfaRequired: true;
+  tempToken: string;
+}
+
 export const authLogin = (email: string, password: string) =>
-  apiPost<AuthResponse>('/auth/login', { email, password });
+  apiPost<AuthResponse | MfaRequiredResponse>('/auth/login', { email, password });
+
+export const authMfaVerify = (tempToken: string, otp: string) =>
+  apiPost<AuthResponse>('/auth/mfa/verify', { tempToken, otp });
 
 export const authSignup = (fullName: string, email: string, password: string) =>
   apiPost<AuthResponse>('/auth/signup', { fullName, email, password });

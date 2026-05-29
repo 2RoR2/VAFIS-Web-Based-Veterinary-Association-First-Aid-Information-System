@@ -107,16 +107,21 @@ CREATE TABLE IF NOT EXISTS quiz_results (
   totalQuestions INT NOT NULL,
   percentage INT NOT NULL,
   passed TINYINT(1) NOT NULL DEFAULT 0,
+  userAnswers JSON NULL,
   attemptDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS users (
-  id VARCHAR(64) PRIMARY KEY,
-  fullName VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  passwordHash VARCHAR(255) NOT NULL,
-  role ENUM('user', 'professional', 'admin') NOT NULL DEFAULT 'user',
-  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  id          VARCHAR(64)                          PRIMARY KEY,
+  fullName    VARCHAR(255)                         NOT NULL,
+  email       VARCHAR(255)                         NOT NULL UNIQUE,
+  passwordHash VARCHAR(255)                        NOT NULL,
+  role        ENUM('user', 'professional', 'admin') NOT NULL DEFAULT 'user',
+  isSuspended  TINYINT(1)                           NOT NULL DEFAULT 0,
+  mfaEnabled   TINYINT(1)                           NOT NULL DEFAULT 0,
+  mfaOtpCode   VARCHAR(6)                           NULL,
+  mfaOtpExpiry DATETIME                             NULL,
+  createdAt    TIMESTAMP                            NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS pets (
@@ -128,4 +133,26 @@ CREATE TABLE IF NOT EXISTS pets (
   createdAt DATETIME     NOT NULL DEFAULT NOW(),
   updatedAt DATETIME     NOT NULL DEFAULT NOW() ON UPDATE NOW(),
   FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id          VARCHAR(64)  PRIMARY KEY,
+  name        VARCHAR(255) NOT NULL UNIQUE,
+  description TEXT         NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS emergency_scenarios (
+  id          VARCHAR(64)                        PRIMARY KEY,
+  name        VARCHAR(255)                       NOT NULL,
+  species     JSON                               NOT NULL,
+  severity    ENUM('low', 'medium', 'high')      NOT NULL,
+  description TEXT                               NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS species (
+  id                VARCHAR(64)  PRIMARY KEY,
+  name              VARCHAR(255) NOT NULL,
+  icon              VARCHAR(64)  NOT NULL DEFAULT '',
+  description       TEXT         NOT NULL DEFAULT '',
+  commonEmergencies JSON         NOT NULL
 );

@@ -24,6 +24,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "latest",
     "mysql2": "latest",
+    "nodemailer": "^8.0.9",
     "react": "latest",
     "react-dom": "latest",
     "tailwindcss": "latest",
@@ -37,6 +38,7 @@
     "@types/express": "latest",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "latest",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "tsx": "latest"

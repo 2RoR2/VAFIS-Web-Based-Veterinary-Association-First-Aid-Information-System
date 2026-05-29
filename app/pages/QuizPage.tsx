@@ -54,6 +54,7 @@ export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
         totalQuestions: activeQuiz.questions.length,
         percentage,
         passed,
+        userAnswers,
       }),
     })
       .catch(() => {/* silently ignore — result display is already shown */})
@@ -179,6 +180,14 @@ export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
               >
                 Back to Quizzes
               </button>
+              {currentUser && (
+                <button
+                  onClick={() => onNavigate('pet-quiz-history')}
+                  className="px-6 py-2 border border-border rounded-md hover:bg-muted transition-colors"
+                >
+                  My Quiz History
+                </button>
+              )}
               <button
                 onClick={() => onNavigate('feedback', { contentType: 'Quiz', contentTitle: activeQuiz.title })}
                 className="px-6 py-2 border border-border rounded-md hover:bg-muted transition-colors"

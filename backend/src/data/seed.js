@@ -351,6 +351,146 @@ const clinics = [
   },
 ];
 
+// ── Content categories ─────────────────────────────────────────────────────────
+
+const categories = [
+  {
+    id: 'airway-emergencies',
+    name: 'Airway Emergencies',
+    description: 'Conditions affecting breathing including choking, airway obstruction, and respiratory distress.',
+  },
+  {
+    id: 'trauma',
+    name: 'Trauma',
+    description: 'Physical injuries from accidents, falls, or blunt force including wounds, bruising, and internal injuries.',
+  },
+  {
+    id: 'environmental-emergencies',
+    name: 'Environmental Emergencies',
+    description: 'Emergencies caused by environmental factors such as heatstroke, hypothermia, and extreme weather exposure.',
+  },
+  {
+    id: 'toxicology',
+    name: 'Toxicology',
+    description: 'Poisoning and toxic ingestion from household chemicals, plants, foods, or medications.',
+  },
+  {
+    id: 'neurological',
+    name: 'Neurological',
+    description: 'Brain and nervous system emergencies such as seizures, head trauma, and sudden collapse.',
+  },
+  {
+    id: 'sensory-injuries',
+    name: 'Sensory Injuries',
+    description: 'Trauma or foreign bodies affecting the eyes, ears, or other sensory organs.',
+  },
+  {
+    id: 'immune-response',
+    name: 'Immune Response',
+    description: 'Allergic reactions and anaphylaxis triggered by insect stings, foods, or medications.',
+  },
+  {
+    id: 'environmental',
+    name: 'Environmental',
+    description: 'General environmental hazards and exposure-related conditions affecting animal health.',
+  },
+  {
+    id: 'gastrointestinal',
+    name: 'Gastrointestinal',
+    description: 'Digestive system emergencies including bloat, obstruction, and severe vomiting or diarrhoea.',
+  },
+  {
+    id: 'fundamentals',
+    name: 'Fundamentals',
+    description: 'Core first-aid principles, general pet emergency preparedness, and basic assessment skills.',
+  },
+  {
+    id: 'emergency-response',
+    name: 'Emergency Response',
+    description: 'Initial triage, scene assessment, and immediate response procedures for critical situations.',
+  },
+  {
+    id: 'cardiovascular',
+    name: 'Cardiovascular',
+    description: 'Heart-related emergencies including cardiac arrest, shock, and circulatory failure.',
+  },
+];
+
+// ── Emergency scenarios ────────────────────────────────────────────────────────
+
+const scenarios = [
+  {
+    id: 'choking',
+    name: 'Choking',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'high',
+    description: 'Airway obstruction caused by a foreign object. Requires immediate intervention to restore breathing.',
+  },
+  {
+    id: 'poisoning',
+    name: 'Poisoning / Toxin Ingestion',
+    species: JSON.stringify(['Dogs', 'Cats', 'Rabbits']),
+    severity: 'high',
+    description: 'Ingestion of toxic substances including household chemicals, plants, or human foods. Contact a vet before inducing vomiting.',
+  },
+  {
+    id: 'bleeding',
+    name: 'Severe Bleeding',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'medium',
+    description: 'External wounds causing significant blood loss. Apply firm direct pressure and seek veterinary care promptly.',
+  },
+  {
+    id: 'seizure',
+    name: 'Seizure',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'high',
+    description: 'Uncontrolled electrical brain activity causing convulsions or collapse. Keep the pet safe and time the episode.',
+  },
+  {
+    id: 'heatstroke',
+    name: 'Heatstroke',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'high',
+    description: 'Dangerous overheating from hot environments or excessive exercise. Move to shade and apply cool water immediately.',
+  },
+  {
+    id: 'fracture',
+    name: 'Fracture / Broken Bone',
+    species: JSON.stringify(['Dogs', 'Cats', 'Rabbits']),
+    severity: 'medium',
+    description: 'Broken or fractured bones requiring immobilisation. Do not attempt to splint at home — transport carefully to a vet.',
+  },
+  {
+    id: 'burns',
+    name: 'Burns',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'medium',
+    description: 'Thermal, chemical, or electrical burns to the skin or paws. Cool the area with running water; do not apply ice.',
+  },
+  {
+    id: 'drowning',
+    name: 'Drowning / Near-Drowning',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'high',
+    description: 'Water submersion causing breathing difficulty or respiratory arrest. Clear airway, begin rescue breathing if trained.',
+  },
+  {
+    id: 'eye-injury',
+    name: 'Eye Injury',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'medium',
+    description: 'Trauma, foreign body, or chemical exposure affecting the eye. Do not rub the eye; flush gently with clean water.',
+  },
+  {
+    id: 'allergic-reaction',
+    name: 'Allergic Reaction / Anaphylaxis',
+    species: JSON.stringify(['Dogs', 'Cats']),
+    severity: 'high',
+    description: 'Severe immune response to an allergen such as insect stings, foods, or medications. Rush to the vet immediately.',
+  },
+];
+
 // ── Emergency contacts ─────────────────────────────────────────────────────────
 // emergency_contacts uses auto-increment id — no unique key for INSERT IGNORE.
 // We only insert these if the table is currently empty.
@@ -423,6 +563,25 @@ try {
       ],
     );
     console.log(`  Seeded clinic: ${clinic.name}`);
+  }
+
+  // ── Seed content categories (INSERT IGNORE — safe to re-run) ────────────────
+  for (const category of categories) {
+    await connection.execute(
+      `INSERT IGNORE INTO categories (id, name, description) VALUES (?, ?, ?)`,
+      [category.id, category.name, category.description],
+    );
+    console.log(`  Seeded category: ${category.name}`);
+  }
+
+  // ── Seed emergency scenarios (INSERT IGNORE — safe to re-run) ───────────────
+  for (const scenario of scenarios) {
+    await connection.execute(
+      `INSERT IGNORE INTO emergency_scenarios (id, name, species, severity, description)
+       VALUES (?, ?, ?, ?, ?)`,
+      [scenario.id, scenario.name, scenario.species, scenario.severity, scenario.description],
+    );
+    console.log(`  Seeded scenario: ${scenario.name}`);
   }
 
   // ── Seed emergency contacts (only if table is empty) ─────────────────────────

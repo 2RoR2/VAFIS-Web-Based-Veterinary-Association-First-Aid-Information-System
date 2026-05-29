@@ -55,6 +55,8 @@ export interface QuizQuestion {
   explanation: string;
 }
 
+export type QuizStatus = 'draft' | 'scheduled' | 'published' | 'archived';
+
 export interface Quiz {
   id: string;
   title: string;
@@ -63,6 +65,41 @@ export interface Quiz {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   passingScore: number;
   questions: QuizQuestion[];
+  description: string;
+  // admin workflow fields
+  status?: QuizStatus;
+  scheduledAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface Species {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  commonEmergencies: string[];
+}
+
+export interface VetAccount {
+  id: string;
+  fullName: string;
+  email: string;
+  isSuspended: boolean;
+  createdAt: string;
+}
+
+export interface ContentCategory {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface EmergencyScenario {
+  id: string;
+  name: string;
+  species: string[];
+  severity: 'low' | 'medium' | 'high';
   description: string;
 }
 
@@ -126,11 +163,15 @@ export interface AuditLogItem {
 export interface QuizResultItem {
   id: string;
   quizId: string;
-  userId: string;
+  userId?: string;
   score: number;
   totalQuestions: number;
   percentage: number;
   passed: boolean;
   attemptDate: string;
-  quizTitle?: string;
+  quizTitle?: string | null;
+  /** Selected option index per question — null for legacy results recorded before this feature */
+  userAnswers?: number[] | null;
+  /** Snapshot of the quiz questions at review time — null if the quiz was deleted */
+  questions?: QuizQuestion[] | null;
 }

@@ -57,3 +57,24 @@ export const submitFeedback = (pool) => async (req, res) => {
     submittedAt,
   });
 };
+
+// ── PUT /api/feedback/:id/status ──────────────────────────────────────────────
+// Admin only — update the review status of a feedback item.
+
+export const updateFeedbackStatus = (pool) => async (req, res) => {
+  const { status } = req.body ?? {};
+  const VALID = ['New', 'Reviewed', 'Action Needed'];
+
+  if (!VALID.includes(status)) {
+    res.status(400).json({ error: `status must be one of: ${VALID.join(', ')}.` });
+    return;
+  }
+
+  const [rows] = await pool.query('SELECT * FROM feedback WHERE id = ?', [req.params.id]);
+  if (!rows[0]) { res.status(404).json({ error: 'Feedback not found.' }); return; }
+
+  await pool.execute('UPDATE feedback SET status = ? WHERE id = ?', [status, req.params.id]);
+
+  const [updated] = await pool.query('SELECT * FROM feedback WHERE id = ?', [req.params.id]);
+  res.json(updated[0]);
+};

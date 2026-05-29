@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
+import { generateOtp, MFA_OTP_EXPIRY_MINUTES, sendOtpEmail } from './mfa.js';
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'vafis-dev-access-secret-change-in-production';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'vafis-dev-refresh-secret-change-in-production';
@@ -68,9 +69,116 @@ export const login = (pool) => async (req, res) => {
     return;
   }
 
+  if (user.isSuspended) {
+    res.status(403).json({ error: 'This account has been suspended. Please contact the administrator.' });
+    return;
+  }
+
+  // ── MFA check ──────────────────────────────────────────────────────────────
+  if (user.mfaEnabled) {
+    const otp = generateOtp();
+
+    // Let MySQL compute the expiry with its own clock — avoids Node ↔ MySQL timezone mismatch
+    await pool.execute(
+      `UPDATE users SET mfaOtpCode = ?, mfaOtpExpiry = NOW() + INTERVAL ${MFA_OTP_EXPIRY_MINUTES} MINUTE WHERE id = ?`,
+      [otp, user.id],
+    );
+
+    try {
+      await sendOtpEmail(user.email, otp, 'login');
+    } catch (err) {
+      console.error('Failed to send login MFA email:', err);
+      res.status(500).json({ error: 'Failed to send verification email. Please try again.' });
+      return;
+    }
+
+    // Issue a short-lived pending token — no real auth cookies yet
+    const tempToken = jwt.sign(
+      { id: user.id, type: 'mfa-pending' },
+      JWT_ACCESS_SECRET,
+      { expiresIn: `${MFA_OTP_EXPIRY_MINUTES}m` },
+    );
+
+    res.json({ mfaRequired: true, tempToken });
+    return;
+  }
+  // ── End MFA check ──────────────────────────────────────────────────────────
+
   const tokenPayload = { id: user.id, email: user.email, role: user.role, fullName: user.fullName };
   const { accessToken, refreshToken } = signTokens(tokenPayload);
 
+  setAuthCookies(res, accessToken, refreshToken);
+
+  res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: DB_TO_FRONTEND_ROLE[user.role] ?? 'pet-owner',
+    },
+  });
+};
+
+// ── POST /api/auth/mfa/verify ─────────────────────────────────────────────────
+// Second step of MFA login — client sends { tempToken, otp }.
+// On success: issues real auth cookies and returns the user object.
+
+export const verifyMfaLogin = (pool) => async (req, res) => {
+  const { tempToken, otp } = req.body ?? {};
+
+  if (!tempToken || !otp) {
+    res.status(400).json({ error: 'tempToken and otp are required.' });
+    return;
+  }
+
+  let payload;
+  try {
+    payload = jwt.verify(tempToken, JWT_ACCESS_SECRET);
+  } catch {
+    res.status(401).json({ error: 'Verification session has expired. Please log in again.' });
+    return;
+  }
+
+  if (payload.type !== 'mfa-pending') {
+    res.status(401).json({ error: 'Invalid token type.' });
+    return;
+  }
+
+  // Let MySQL compare the expiry with its own NOW() — timezone-safe
+  const [rows] = await pool.query(
+    'SELECT *, (mfaOtpCode IS NOT NULL AND mfaOtpExpiry > NOW()) AS otpValid FROM users WHERE id = ?',
+    [payload.id],
+  );
+  const user = rows[0];
+  if (!user) { res.status(404).json({ error: 'User not found.' }); return; }
+
+  if (!user.mfaOtpCode) {
+    res.status(400).json({ error: 'No pending verification. Please log in again.' });
+    return;
+  }
+
+  if (!user.otpValid) {
+    await pool.execute(
+      'UPDATE users SET mfaOtpCode = NULL, mfaOtpExpiry = NULL WHERE id = ?',
+      [user.id],
+    );
+    res.status(400).json({ error: 'Verification code has expired. Please log in again.' });
+    return;
+  }
+
+  if (String(otp).trim() !== String(user.mfaOtpCode)) {
+    res.status(401).json({ error: 'Invalid verification code.' });
+    return;
+  }
+
+  // Clear OTP and issue real tokens
+  await pool.execute(
+    'UPDATE users SET mfaOtpCode = NULL, mfaOtpExpiry = NULL WHERE id = ?',
+    [user.id],
+  );
+
+  const tokenPayload = { id: user.id, email: user.email, role: user.role, fullName: user.fullName };
+  const { accessToken, refreshToken } = signTokens(tokenPayload);
   setAuthCookies(res, accessToken, refreshToken);
 
   res.json({

@@ -27,6 +27,8 @@ const mapResult = (row) => ({
   percentage: Number(row.percentage),
   passed: Boolean(row.passed),
   attemptDate: row.attemptDate,
+  userAnswers: parseJson(row.userAnswers, null),   // null = legacy result (no per-question data)
+  questions:   parseJson(row.questions,   null),   // null = quiz was deleted
 });
 
 // ── Public ───────────────────────────────────────────────────────────────────
@@ -45,7 +47,7 @@ export const getQuizById = (pool) => async (req, res) => {
 // ── Authenticated ─────────────────────────────────────────────────────────────
 
 export const submitQuizResult = (pool) => async (req, res) => {
-  const { score, totalQuestions, percentage, passed } = req.body ?? {};
+  const { score, totalQuestions, percentage, passed, userAnswers } = req.body ?? {};
 
   if (score === undefined || !totalQuestions || percentage === undefined || passed === undefined) {
     res.status(400).json({ error: 'Missing required fields: score, totalQuestions, percentage, passed.' });
@@ -55,10 +57,15 @@ export const submitQuizResult = (pool) => async (req, res) => {
   const [quizRows] = await pool.query('SELECT id FROM quizzes WHERE id = ?', [req.params.id]);
   if (!quizRows[0]) { res.status(404).json({ error: 'Quiz not found.' }); return; }
 
+  const userAnswersJson = Array.isArray(userAnswers)
+    ? JSON.stringify(userAnswers)
+    : null;
+
   const id = crypto.randomUUID();
   await pool.execute(
-    'INSERT INTO quiz_results (id, quizId, userId, score, totalQuestions, percentage, passed) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [id, req.params.id, req.user.id, Number(score), Number(totalQuestions), Number(percentage), passed ? 1 : 0],
+    `INSERT INTO quiz_results (id, quizId, userId, score, totalQuestions, percentage, passed, userAnswers)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, req.params.id, req.user.id, Number(score), Number(totalQuestions), Number(percentage), passed ? 1 : 0, userAnswersJson],
   );
 
   res.status(201).json({
@@ -69,17 +76,18 @@ export const submitQuizResult = (pool) => async (req, res) => {
     totalQuestions: Number(totalQuestions),
     percentage: Number(percentage),
     passed: Boolean(passed),
+    userAnswers: userAnswers ?? null,
   });
 };
 
 export const getMyResults = (pool) => async (req, res) => {
   const [rows] = await pool.query(
-    `SELECT qr.*, q.title AS quizTitle
+    `SELECT qr.*, q.title AS quizTitle, q.questions
      FROM quiz_results qr
      LEFT JOIN quizzes q ON qr.quizId = q.id
      WHERE qr.userId = ?
      ORDER BY qr.attemptDate DESC
-     LIMIT 20`,
+     LIMIT 50`,
     [req.user.id],
   );
   res.json(rows.map(mapResult));

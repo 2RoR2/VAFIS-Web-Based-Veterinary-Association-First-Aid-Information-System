@@ -69,11 +69,18 @@ export function AuthPage({ mode, onNavigate, onAuthSuccess }: AuthPageProps) {
     setLoading(true);
 
     try {
-      const result = isSignup
-        ? await authSignup(fullName, email, password)
-        : await authLogin(email, password);
-
-      onAuthSuccess({ name: result.user.fullName, email: result.user.email, role: result.user.role });
+      if (isSignup) {
+        const result = await authSignup(fullName, email, password);
+        onAuthSuccess({ name: result.user.fullName, email: result.user.email, role: result.user.role });
+      } else {
+        const result = await authLogin(email, password);
+        if ('mfaRequired' in result) {
+          // Navigate to the dedicated MFA screen with the temp token
+          onNavigate('mfa-screen', { tempToken: result.tempToken });
+        } else {
+          onAuthSuccess({ name: result.user.fullName, email: result.user.email, role: result.user.role });
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
@@ -114,7 +121,7 @@ export function AuthPage({ mode, onNavigate, onAuthSuccess }: AuthPageProps) {
                   <div className="paw-badge w-16 h-16 mb-5" aria-hidden="true" />
                   <p className="text-sm text-primary mb-2">{isSignup ? 'New account' : 'Secure access'}</p>
                   <h2 className="text-3xl mb-2">{isSignup ? 'Sign up' : 'Log in'}</h2>
-                  
+
                   {error && (
                     <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                       {error}
@@ -159,8 +166,6 @@ export function AuthPage({ mode, onNavigate, onAuthSuccess }: AuthPageProps) {
                     {isSignup ? 'Log in' : 'Sign up'}
                   </button>
                 </div>
-
-                
               </form>
             </section>
           </div>

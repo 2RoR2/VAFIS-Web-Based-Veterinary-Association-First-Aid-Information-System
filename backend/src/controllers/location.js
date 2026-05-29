@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 const parseJson = (value, fallback) => {
   if (value === null || value === undefined) return fallback;
   if (Buffer.isBuffer(value)) return JSON.parse(value.toString('utf8')) ?? fallback;
@@ -58,6 +60,99 @@ export const getClinics = (pool) => async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const [rows] = await pool.query(`SELECT * FROM clinics ${where}`, params);
   res.json(rows.map(mapClinic));
+};
+
+// ── GET /api/clinics/:id ──────────────────────────────────────────────────────
+
+export const getClinicById = (pool) => async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM clinics WHERE id = ?', [req.params.id]);
+  if (!rows[0]) { res.status(404).json({ error: 'Clinic not found.' }); return; }
+  res.json(mapClinic(rows[0]));
+};
+
+// ── POST /api/clinics ─────────────────────────────────────────────────────────
+
+export const createClinic = (pool) => async (req, res) => {
+  const { name, address, city, phone, email, website, hours, isEmergency, species, services, lat, lng } = req.body ?? {};
+
+  if (!name?.trim() || !address?.trim() || !city?.trim() || !phone?.trim() || !email?.trim() || !hours?.trim()) {
+    res.status(400).json({ error: 'Missing required fields: name, address, city, phone, email, hours.' });
+    return;
+  }
+
+  const id = `clinic-${crypto.randomUUID().slice(0, 8)}`;
+
+  await pool.execute(
+    `INSERT INTO clinics
+       (id, name, address, city, phone, email, website, hours, hoursDetail,
+        distance, isOpen, isEmergency, services, species, rating, reviews, lat, lng)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, '{}', '', 0, ?, ?, ?, 0, 0, ?, ?)`,
+    [
+      id,
+      name.trim(),
+      address.trim(),
+      city.trim(),
+      phone.trim(),
+      email.trim(),
+      website?.trim() || null,
+      hours.trim(),
+      isEmergency ? 1 : 0,
+      JSON.stringify(Array.isArray(services) ? services : []),
+      JSON.stringify(Array.isArray(species) ? species : []),
+      (lat !== undefined && lat !== '' && lat !== null) ? Number(lat) : null,
+      (lng !== undefined && lng !== '' && lng !== null) ? Number(lng) : null,
+    ],
+  );
+
+  const [created] = await pool.query('SELECT * FROM clinics WHERE id = ?', [id]);
+  res.status(201).json(mapClinic(created[0]));
+};
+
+// ── PUT /api/clinics/:id ──────────────────────────────────────────────────────
+
+export const updateClinic = (pool) => async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM clinics WHERE id = ?', [req.params.id]);
+  const existing = rows[0];
+  if (!existing) { res.status(404).json({ error: 'Clinic not found.' }); return; }
+
+  const { name, address, city, phone, email, website, hours, isEmergency, species, services, lat, lng } = req.body ?? {};
+
+  const newLat = (lat !== undefined && lat !== '' && lat !== null) ? Number(lat) : (lat === '' ? null : existing.lat);
+  const newLng = (lng !== undefined && lng !== '' && lng !== null) ? Number(lng) : (lng === '' ? null : existing.lng);
+
+  await pool.execute(
+    `UPDATE clinics SET
+       name = ?, address = ?, city = ?, phone = ?, email = ?, website = ?,
+       hours = ?, isEmergency = ?, services = ?, species = ?, lat = ?, lng = ?
+     WHERE id = ?`,
+    [
+      name?.trim()    ?? existing.name,
+      address?.trim() ?? existing.address,
+      city?.trim()    ?? existing.city,
+      phone?.trim()   ?? existing.phone,
+      email?.trim()   ?? existing.email,
+      website !== undefined ? (website?.trim() || null) : existing.website,
+      hours?.trim()   ?? existing.hours,
+      isEmergency !== undefined ? (isEmergency ? 1 : 0) : existing.isEmergency,
+      Array.isArray(services) ? JSON.stringify(services) : existing.services,
+      Array.isArray(species)  ? JSON.stringify(species)  : existing.species,
+      newLat,
+      newLng,
+      req.params.id,
+    ],
+  );
+
+  const [updated] = await pool.query('SELECT * FROM clinics WHERE id = ?', [req.params.id]);
+  res.json(mapClinic(updated[0]));
+};
+
+// ── DELETE /api/clinics/:id ───────────────────────────────────────────────────
+
+export const deleteClinic = (pool) => async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM clinics WHERE id = ?', [req.params.id]);
+  if (!rows[0]) { res.status(404).json({ error: 'Clinic not found.' }); return; }
+  await pool.execute('DELETE FROM clinics WHERE id = ?', [req.params.id]);
+  res.json({ message: 'Clinic deleted.' });
 };
 
 // ── GET /api/clinics/emergency-contacts ──────────────────────────────────────

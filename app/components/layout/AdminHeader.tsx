@@ -9,8 +9,15 @@ interface AdminHeaderProps {
   onLogout: () => void;
 }
 
-const contentSubPages = ['admin-video-list', 'admin-video-add', 'admin-video-edit', 'quiz', 'species', 'scenarios', 'categories'];
+const contentSubPages = [
+  'admin-video-list', 'admin-video-add', 'admin-video-edit',
+  'admin-quiz-list', 'admin-quiz-create', 'admin-quiz-edit', 'admin-quiz-questions', 'admin-quiz-preview',
+  'admin-species-list', 'admin-species-add', 'admin-species-edit',
+  'admin-scenario-list', 'admin-scenario-add', 'admin-scenario-edit',
+  'admin-category-list', 'admin-category-add', 'admin-category-edit',
+];
 const guideSubPages = ['admin-guide-list', 'admin-guide-create', 'admin-guide-edit', 'admin-guide-detail', 'admin-guide-approve'];
+const vetSubPages   = ['admin-vet-list', 'admin-vet-add', 'admin-vet-detail'];
 
 const navItem = (active: boolean) =>
   `px-3 py-2 rounded-md transition-colors text-sm ${
@@ -82,10 +89,10 @@ export function AdminHeader({ onNavigate, currentPage, currentUser, onLogout }: 
                 <div className="absolute top-full left-0 mt-1 bg-white border border-border rounded-md shadow-md py-1 min-w-[140px] z-50">
                   {[
                     { label: 'Videos', page: 'admin-video-list' },
-                    { label: 'Quizzes', page: 'quiz' },
-                    { label: 'Species', page: 'species' },
-                    { label: 'Scenarios', page: 'scenarios' },
-                    { label: 'Categories', page: 'categories' },
+                    { label: 'Quizzes', page: 'admin-quiz-list' },
+                    { label: 'Species', page: 'admin-species-list' },
+                    { label: 'Scenarios', page: 'admin-scenario-list' },
+                    { label: 'Categories', page: 'admin-category-list' },
                   ].map(({ label, page }) => (
                     <button
                       key={page}
@@ -105,11 +112,11 @@ export function AdminHeader({ onNavigate, currentPage, currentUser, onLogout }: 
               Clinics
             </button>
 
-            <button onClick={() => navigate('users')} className={navItem(currentPage === 'users')}>
+            <button onClick={() => navigate('admin-vet-list')} className={navItem(vetSubPages.includes(currentPage))}>
               Users
             </button>
 
-            <button onClick={() => navigate('feedback')} className={navItem(currentPage === 'feedback')}>
+            <button onClick={() => navigate('admin-feedback-list')} className={navItem(currentPage === 'admin-feedback-list')}>
               Feedback
             </button>
 
@@ -133,8 +140,9 @@ export function AdminHeader({ onNavigate, currentPage, currentUser, onLogout }: 
 
             {currentUser && (
               <button
-                onClick={() => navigate('admin-workflow')}
-                className="px-3 py-2 bg-secondary text-secondary-foreground rounded-full text-sm"
+                onClick={() => navigate('admin-profile')}
+                className="px-3 py-2 bg-secondary text-secondary-foreground rounded-full text-sm hover:bg-secondary/80 transition-colors"
+                title="Account settings"
               >
                 {currentUser.name}
               </button>

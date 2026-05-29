@@ -19,6 +19,14 @@ import { createUserRouter } from '../backend/src/routes/user.js';
 import { createVideosRouter } from '../backend/src/routes/videos.js';
 // @ts-ignore
 import { createPetsRouter } from '../backend/src/routes/pets.js';
+// @ts-ignore
+import { createScenariosRouter } from '../backend/src/routes/scenarios.js';
+// @ts-ignore
+import { createCategoriesRouter } from '../backend/src/routes/categories.js';
+// @ts-ignore
+import { createAdminRouter } from '../backend/src/routes/admin.js';
+// @ts-ignore
+import { createMfaRouter } from '../backend/src/routes/mfa.js';
 
 dotenv.config();
 
@@ -53,6 +61,10 @@ app.use('/api/feedback', createFeedbackRouter(pool));
 app.use('/api/user', createUserRouter(pool));
 app.use('/api/videos', createVideosRouter(pool));
 app.use('/api/pets', createPetsRouter(pool));
+app.use('/api/scenarios', createScenariosRouter(pool));
+app.use('/api/categories', createCategoriesRouter(pool));
+app.use('/api/admin',     createAdminRouter(pool));
+app.use('/api/mfa',       createMfaRouter(pool));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
