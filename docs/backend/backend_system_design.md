@@ -59,18 +59,6 @@ VAFIS is a web-based platform that gives pet owners reliable, veterinarian-appro
         - FirstAidGuide returns revision comments to Administrator
         - Admin edits and resubmits → loop restarts from step 2
 
-### Guide Review Repository Sequence
-1. VeterinaryProfessional receives a Notification that a guide is pending clinical review.
-2. VeterinaryProfessional acknowledges the Notification and opens the review queue through FirstAidGuide.
-3. FirstAidGuide asks GuideRepository for pending reviews.
-4. GuideRepository queries the Database for guides with `pending_review` status and returns them as pending guides.
-5. FirstAidGuide displays the pending guide queue to the VeterinaryProfessional.
-6. VeterinaryProfessional submits a review outcome.
-7. FirstAidGuide records the review outcome through GuideRepository and logs the review event in AuditLog.
-8. If approved, FirstAidGuide creates a Notification for the VeterinaryAssociationAdministrator so the guide can be published.
-9. If changes are required, FirstAidGuide creates a Notification for the VeterinaryAssociationAdministrator containing the review comments.
-10. Notification acknowledgement is returned to FirstAidGuide.
-
 - Admin approves and publishes
     - Administrator verifies approval details and publishes the guide
     - Approval event logged in AuditLog

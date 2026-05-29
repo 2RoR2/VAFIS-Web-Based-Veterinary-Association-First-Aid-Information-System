@@ -1,84 +1,123 @@
-const parseJson = (value, fallback) => {
-  if (value === null || value === undefined) return fallback;
-  if (Buffer.isBuffer(value)) return JSON.parse(value.toString('utf8')) ?? fallback;
-  if (typeof value === 'string') return JSON.parse(value) ?? fallback;
-  return value ?? fallback;
-};
-
-export const mapGuide = (row) => ({
-  id: row.id,
-  status: row.status ?? 'published',
-  title: row.title,
-  species: parseJson(row.species, []),
-  severity: row.severity,
-  readTime: row.readTime,
-  description: row.description,
-  category: row.category,
-  lastReviewed: row.lastReviewed,
-  reviewedBy: row.reviewedBy,
-  steps: parseJson(row.steps, []),
-  warnings: parseJson(row.warnings, []),
-  relatedVideos: parseJson(row.relatedVideos, []),
-  relatedGuides: parseJson(row.relatedGuides, []),
-  createdBy: row.createdBy ?? null,
-  assignedVetId: row.assignedVetId ?? null,
-  reviewComments: row.reviewComments ?? null,
-  submittedAt: row.submittedAt ?? null,
-  reviewedAt: row.reviewedAt ?? null,
-  publishedAt: row.publishedAt ?? null,
-  updatedAt: row.updatedAt ?? null,
-});
+import { randomUUID } from 'node:crypto';
 
 export class GuideRepository {
   constructor(pool) {
     this.pool = pool;
   }
 
+  async findPublished() {
+    const [rows] = await this.pool.query('SELECT * FROM guides WHERE status = ?', ['published']);
+    return rows;
+  }
+
+  async findAll() {
+    const [rows] = await this.pool.query('SELECT * FROM guides ORDER BY updatedAt DESC, id ASC');
+    return rows;
+  }
+
   async findById(id) {
     const [rows] = await this.pool.query('SELECT * FROM guides WHERE id = ?', [id]);
-    return rows[0] ? mapGuide(rows[0]) : null;
+    return rows[0] ?? null;
   }
 
-  async findPendingReviews(vetId) {
-    const params = vetId ? [vetId] : [];
-    const assignmentFilter = vetId ? 'AND (assignedVetId IS NULL OR assignedVetId = ?)' : '';
-    const [rows] = await this.pool.query(
-      `SELECT * FROM guides
-       WHERE status = 'pending_review' ${assignmentFilter}
-       ORDER BY submittedAt ASC, updatedAt ASC, id ASC`,
-      params,
-    );
-
-    return rows.map(mapGuide);
+  async search({ conditions, params }) {
+    const sql = `SELECT * FROM guides WHERE ${conditions.join(' AND ')} ORDER BY publishedAt DESC`;
+    const [rows] = await this.pool.query(sql, params);
+    return rows;
   }
 
-  async markApproved(id, reviewerName) {
-    const reviewDate = new Date().toISOString().slice(0, 10);
-
+  async create({ id, title, species, severity, readTime, description, category, steps, warnings, relatedVideos, relatedGuides, createdBy }) {
     await this.pool.execute(
-      `UPDATE guides
-       SET status = 'reviewed',
-           reviewedAt = NOW(),
-           lastReviewed = ?,
-           reviewedBy = ?,
-           reviewComments = NULL
+      `INSERT INTO guides
+         (id, status, title, species, severity, readTime, description, category,
+          lastReviewed, reviewedBy, steps, warnings, relatedVideos, relatedGuides, createdBy)
+       VALUES (?, 'draft', ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?)`,
+      [id, title, species, severity, readTime, description, category, steps, warnings, relatedVideos, relatedGuides, createdBy],
+    );
+    return this.findById(id);
+  }
+
+  async update(id, { title, species, severity, readTime, description, category, steps, warnings, relatedVideos, relatedGuides }) {
+    await this.pool.execute(
+      `UPDATE guides SET
+         title         = COALESCE(?, title),
+         species       = COALESCE(?, species),
+         severity      = COALESCE(?, severity),
+         readTime      = COALESCE(?, readTime),
+         description   = COALESCE(?, description),
+         category      = COALESCE(?, category),
+         steps         = COALESCE(?, steps),
+         warnings      = COALESCE(?, warnings),
+         relatedVideos = COALESCE(?, relatedVideos),
+         relatedGuides = COALESCE(?, relatedGuides)
        WHERE id = ?`,
+      [title, species, severity, readTime, description, category, steps, warnings, relatedVideos, relatedGuides, id],
+    );
+    return this.findById(id);
+  }
+
+  async delete(id) {
+    await this.pool.execute('DELETE FROM guides WHERE id = ?', [id]);
+  }
+
+  async submitForReview(id, assignedVetId) {
+    await this.pool.execute(
+      `UPDATE guides SET status = 'pending_review', assignedVetId = ?, submittedAt = NOW(), reviewComments = NULL WHERE id = ?`,
+      [assignedVetId ?? null, id],
+    );
+    return this.findById(id);
+  }
+
+  async approve(id, reviewDate, reviewerName) {
+    await this.pool.execute(
+      `UPDATE guides SET status = 'reviewed', reviewedAt = NOW(), lastReviewed = ?, reviewedBy = ?, reviewComments = NULL WHERE id = ?`,
       [reviewDate, reviewerName, id],
     );
-
     return this.findById(id);
   }
 
-  async markRevisionRequired(id, comments) {
+  async requestChanges(id, comments) {
     await this.pool.execute(
-      `UPDATE guides
-       SET status = 'revision_required',
-           reviewComments = ?,
-           reviewedAt = NOW()
-       WHERE id = ?`,
+      `UPDATE guides SET status = 'revision_required', reviewComments = ?, reviewedAt = NOW() WHERE id = ?`,
       [comments, id],
     );
-
     return this.findById(id);
+  }
+
+  async publish(id) {
+    await this.pool.execute(
+      `UPDATE guides SET status = 'published', publishedAt = NOW() WHERE id = ?`,
+      [id],
+    );
+    return this.findById(id);
+  }
+
+  async archive(id) {
+    await this.pool.execute(`UPDATE guides SET status = 'archived' WHERE id = ?`, [id]);
+    return this.findById(id);
+  }
+
+  async unpublish(id) {
+    await this.pool.execute(`UPDATE guides SET status = 'draft' WHERE id = ?`, [id]);
+    return this.findById(id);
+  }
+
+  async findUserByIdForNotification(userId) {
+    const [rows] = await this.pool.query('SELECT email FROM users WHERE id = ?', [userId]);
+    return rows[0] ?? null;
+  }
+
+  async logAudit(actor, action, target) {
+    await this.pool.execute(
+      'INSERT INTO audit_logs (id, actor, action, target, timestamp) VALUES (?, ?, ?, ?, ?)',
+      [randomUUID(), actor, action, target, new Date().toISOString()],
+    );
+  }
+
+  async notify(audience, event) {
+    await this.pool.execute(
+      'INSERT INTO notifications (id, audience, event, status, timestamp) VALUES (?, ?, ?, ?, ?)',
+      [randomUUID(), audience, event, 'unread', new Date().toISOString()],
+    );
   }
 }

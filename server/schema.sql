@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS pets (
 CREATE TABLE IF NOT EXISTS categories (
   id          VARCHAR(64)  PRIMARY KEY,
   name        VARCHAR(255) NOT NULL UNIQUE,
-  description TEXT         NOT NULL DEFAULT ''
+  description TEXT         NULL
 );
 
 CREATE TABLE IF NOT EXISTS emergency_scenarios (
@@ -153,6 +153,6 @@ CREATE TABLE IF NOT EXISTS species (
   id                VARCHAR(64)  PRIMARY KEY,
   name              VARCHAR(255) NOT NULL,
   icon              VARCHAR(64)  NOT NULL DEFAULT '',
-  description       TEXT         NOT NULL DEFAULT '',
+  description       TEXT         NULL,
   commonEmergencies JSON         NOT NULL
 );

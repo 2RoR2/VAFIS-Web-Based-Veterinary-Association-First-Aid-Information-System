@@ -6,7 +6,6 @@ import {
   deleteGuide,
   getAdminGuides,
   getGuideById,
-  getPendingReviewGuides,
   getPublishedGuides,
   publishGuide,
   reviewGuide,
@@ -29,7 +28,6 @@ export const createGuidesRouter = (pool) => {
 
   // Admin + Vet — all statuses (must be before /:id to avoid route conflict)
   router.get('/admin', requireAuth, requireRole('admin', 'professional'), asyncHandler(getAdminGuides(pool)));
-  router.get('/pending-reviews', requireAuth, requireRole('professional'), asyncHandler(getPendingReviewGuides(pool)));
 
   // Single guide — published for public, any status for admin/vet
   router.get('/:id', optionalAuth, asyncHandler(getGuideById(pool)));

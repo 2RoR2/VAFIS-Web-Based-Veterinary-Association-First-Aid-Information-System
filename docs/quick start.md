@@ -4,14 +4,29 @@ docker run --name vafis-mysql -e MYSQL_ROOT_PASSWORD= -e MYSQL_ALLOW_EMPTY_PASSW
 - then run this:
 docker start vafis-mysql
 
-# run the database first
+# populate the database
 - run this first:
-npm run db:migrate   
+1. npm run db:seed   
+2. npm run db:seed-users
+    
 - then run this:
-npm run db:seed 
+npm run db:migrate 
 
 # Start the backend server (one terminal)
 npm run dev:server
 
 # Start the frontend (another terminal)
 npm run dev:client
+
+# 
+Use the Docker exec command to open a MySQL shell inside the container:
+docker exec -it vafis-mysql mysql -u root vafis
+
+Once inside the MySQL shell, run:
+SHOW TABLES;
+
+To see a table's structure:
+DESCRIBE guides;
+
+To exit the MySQL shell:
+EXIT
