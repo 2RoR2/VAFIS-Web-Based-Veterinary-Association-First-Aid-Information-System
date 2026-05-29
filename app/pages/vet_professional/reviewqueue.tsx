@@ -19,9 +19,9 @@ export function ReviewQueuePage({ onNavigate }: ReviewQueuePageProps) {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    apiGet<Guide[]>('/guides/admin', controller.signal)
+    apiGet<Guide[]>('/guides/pending-reviews', controller.signal)
       .then((data) => {
-        setGuides(data.filter((g) => g.status === 'pending_review'));
+        setGuides(data);
         setError(null);
       })
       .catch((err) => {

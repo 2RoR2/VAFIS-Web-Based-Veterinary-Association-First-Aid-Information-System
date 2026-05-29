@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "types": ["jest", "node", "@testing-library/jest-dom"]
+  },
+  "include": [
+    "app",
+    "server",
+    "jest.setup.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+}

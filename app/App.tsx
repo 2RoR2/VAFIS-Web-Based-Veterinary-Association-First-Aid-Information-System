@@ -236,7 +236,7 @@ export default function App() {
     }
 
     if (user.role === 'pet-owner') {
-      setCurrentPage('pet-dashboard');
+      setCurrentPage('home');
       setPageData(null);
       window.scrollTo(0, 0);
       return;
@@ -296,7 +296,7 @@ export default function App() {
         {currentPage === 'review-guide' && <VetReviewGuidePage onNavigate={handleNavigate} guideId={pageData?.guideId} />}
         {currentPage === 'notifications' && <NotificationsPage onNavigate={handleNavigate} />}
         {currentPage === 'audit-log' && <AuditLogPage onNavigate={handleNavigate} />}
-        {currentPage === 'logout' && <LogoutPage onConfirm={handleLogout} onCancel={() => handleNavigate(currentUser?.role === 'pet-owner' ? 'pet-dashboard' : 'admin-workflow')} />}
+        {currentPage === 'logout' && <LogoutPage onConfirm={handleLogout} onCancel={() => handleNavigate(currentUser?.role === 'pet-owner' ? 'home' : 'admin-workflow')} />}
         {currentPage === 'terms' && <TermsPage onNavigate={handleNavigate} />}
         {currentPage === 'privacy' && <PrivacyPage onNavigate={handleNavigate} />}
         {currentPage === 'admin-guide-list' && <ManageGuideListPage onNavigate={handleNavigate} />}

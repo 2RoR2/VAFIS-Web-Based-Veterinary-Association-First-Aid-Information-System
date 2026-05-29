@@ -2,6 +2,10 @@ node_modules/
 dist/
 .env
 .env.local
+.env copy
+env
+env (2)
+*.log
 .DS_Store
 
 # Ignore Claude folder
