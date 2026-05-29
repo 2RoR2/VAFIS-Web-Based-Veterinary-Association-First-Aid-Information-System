@@ -1,8 +1,4 @@
 import { ArrowRight, BookOpen, Brain, HelpCircle, MapPin, Phone, Search, ShieldCheck, Star, TrendingUp, Video } from 'lucide-react';
-import { guides } from '../data/guides';
-import { videos } from '../data/videos';
-import { quizzes } from '../data/quizzes';
-import { clinics } from '../data/clinics';
 import clinicImage from '../assets/clinic-location-care.png';
 import clinicDirectoryImage from '../assets/clinic_directory.jpg';
 import emergencyScenarioImage from '../assets/emergency_scenario.png';
@@ -17,12 +13,18 @@ import dogImage from '../assets/species-dog.png';
 import guineaPigImage from '../assets/species-guinea-pig.png';
 import hamsterImage from '../assets/species-hamster.png';
 import rabbitImage from '../assets/species-rabbit.png';
+import { useApiData } from '../hooks/useApiData';
+import { Clinic, Guide, Quiz, Video as VideoItem } from '../types/content';
 
 interface HomePageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
+  const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
+  const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);
+  const { data: quizzes, loading: quizzesLoading, error: quizzesError } = useApiData<Quiz[]>('/quizzes', []);
+  const { data: clinics, loading: clinicsLoading, error: clinicsError } = useApiData<Clinic[]>('/clinics', []);
   const imageAssets = {
     hero: heroImage,
     heroBackground: heroBackgroundImage,
@@ -54,14 +56,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
     },
     {
       title: 'Video Tutorials',
-      description: videos[0].title,
+      description: videos[0]?.title ?? 'See the latest veterinarian-led tutorials.',
       image: imageAssets.videoTutorial,
       icon: Video,
       action: () => onNavigate('videos'),
     },
     {
       title: 'Interactive Quizzes',
-      description: `${quizzes[0].questions.length} question starter quiz for pet first-aid readiness.`,
+      description: quizzes[0]
+        ? `${quizzes[0].questions.length} question starter quiz for pet first-aid readiness.`
+        : 'Test your readiness with guided quizzes.',
       image: imageAssets.quiz,
       icon: Brain,
       action: () => onNavigate('quiz'),
@@ -81,6 +85,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
     'Can I search guides by species?',
     'Where can I find nearby emergency clinics?',
   ];
+  const hasLoading = guidesLoading || videosLoading || quizzesLoading || clinicsLoading;
+  const loadError = guidesError || videosError || quizzesError || clinicsError;
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,6 +104,14 @@ export function HomePage({ onNavigate }: HomePageProps) {
           className="pointer-events-none absolute -bottom-38.5 left-1/2 z-30 hidden w-[620px] max-w-[46vw] -translate-x-1/2 object-contain drop-shadow-sm lg:block"
         />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {loadError && (
+            <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              Unable to load dashboard content. {loadError}
+            </div>
+          )}
+          {hasLoading && !loadError && (
+            <p className="mb-6 text-sm text-muted-foreground">Loading content...</p>
+          )}
           <div className="grid lg:grid-cols-[260px_1fr_300px] gap-8 items-center py-12 lg:py-16">
             <aside className="hidden lg:block bg-primary text-primary-foreground rounded-[2rem] p-6 shadow-sm">
               <p className="text-sm opacity-90 mb-3">Quick access</p>

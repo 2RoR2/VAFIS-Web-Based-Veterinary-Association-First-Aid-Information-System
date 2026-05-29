@@ -9,8 +9,12 @@ export interface Video {
   instructor: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   views: number;
+  videoUrl?: string | null;
+  relatedGuideId?: string | null;
 }
 
+// YouTube embed URLs — replace VIDEO_ID with the actual YouTube video ID as needed.
+// Format: https://www.youtube.com/embed/VIDEO_ID
 export const videos: Video[] = [
   {
     id: 'cpr-dogs',
@@ -22,7 +26,9 @@ export const videos: Video[] = [
     thumbnail: 'Dog',
     instructor: 'Dr. Sarah Mitchell, DVM',
     difficulty: 'Advanced',
-    views: 15420
+    views: 15420,
+    videoUrl: 'https://www.youtube.com/embed/ScKfVHqHF7I',
+    relatedGuideId: 'difficulty-breathing',
   },
   {
     id: 'heimlich-cats',
@@ -34,7 +40,9 @@ export const videos: Video[] = [
     thumbnail: 'Cat',
     instructor: 'Dr. James Chen, DVM',
     difficulty: 'Intermediate',
-    views: 12305
+    views: 12305,
+    videoUrl: 'https://www.youtube.com/embed/8Pj2MArqoRk',
+    relatedGuideId: 'choking-emergency',
   },
   {
     id: 'wound-care',
@@ -46,7 +54,9 @@ export const videos: Video[] = [
     thumbnail: 'Aid',
     instructor: 'Dr. Emily Rodriguez, DVM',
     difficulty: 'Beginner',
-    views: 23150
+    views: 23150,
+    videoUrl: 'https://www.youtube.com/embed/xWCsmUE5ELU',
+    relatedGuideId: 'bleeding-wounds',
   },
   {
     id: 'heatstroke-signs',
@@ -58,7 +68,9 @@ export const videos: Video[] = [
     thumbnail: 'Heat',
     instructor: 'Dr. Michael Foster, DVM',
     difficulty: 'Beginner',
-    views: 18920
+    views: 18920,
+    videoUrl: 'https://www.youtube.com/embed/VjlpKxQKc_8',
+    relatedGuideId: 'heatstroke',
   },
   {
     id: 'rabbit-firstaid',
@@ -70,7 +82,9 @@ export const videos: Video[] = [
     thumbnail: 'Rabbit',
     instructor: 'Dr. Lisa Thompson, DVM',
     difficulty: 'Beginner',
-    views: 8650
+    views: 8650,
+    videoUrl: 'https://www.youtube.com/embed/RzRaYDCCnUs',
+    relatedGuideId: null,
   },
   {
     id: 'bird-injuries',
@@ -82,7 +96,9 @@ export const videos: Video[] = [
     thumbnail: 'Bird',
     instructor: 'Dr. Patricia Wong, DVM',
     difficulty: 'Intermediate',
-    views: 7230
+    views: 7230,
+    videoUrl: 'https://www.youtube.com/embed/Oj3fRSVkDaw',
+    relatedGuideId: 'bleeding-wounds',
   },
   {
     id: 'paw-bandaging',
@@ -94,7 +110,9 @@ export const videos: Video[] = [
     thumbnail: 'Paw',
     instructor: 'Dr. Amanda Martinez, DVM',
     difficulty: 'Intermediate',
-    views: 14580
+    views: 14580,
+    videoUrl: 'https://www.youtube.com/embed/sMxZjDhMfT4',
+    relatedGuideId: 'bleeding-wounds',
   },
   {
     id: 'medication-admin',
@@ -106,7 +124,9 @@ export const videos: Video[] = [
     thumbnail: 'Meds',
     instructor: 'Dr. Robert Kim, DVM',
     difficulty: 'Beginner',
-    views: 19870
+    views: 19870,
+    videoUrl: 'https://www.youtube.com/embed/NDWlwzE_1oo',
+    relatedGuideId: null,
   },
   {
     id: 'seizure-response',
@@ -118,7 +138,9 @@ export const videos: Video[] = [
     thumbnail: 'Dog',
     instructor: 'Dr. Jennifer Lee, DVM',
     difficulty: 'Intermediate',
-    views: 11940
+    views: 11940,
+    videoUrl: 'https://www.youtube.com/embed/2O_QqXJ5FjM',
+    relatedGuideId: 'seizures',
   },
   {
     id: 'poisoning-response',
@@ -130,7 +152,9 @@ export const videos: Video[] = [
     thumbnail: 'Toxin',
     instructor: 'Dr. Lisa Thompson, DVM, Toxicology',
     difficulty: 'Advanced',
-    views: 16230
+    views: 16230,
+    videoUrl: 'https://www.youtube.com/embed/7gFl3A5eXYw',
+    relatedGuideId: 'poisoning',
   },
   {
     id: 'heimlich-dogs',
@@ -142,7 +166,9 @@ export const videos: Video[] = [
     thumbnail: 'Dog',
     instructor: 'Dr. Sarah Mitchell, DVM',
     difficulty: 'Intermediate',
-    views: 13670
+    views: 13670,
+    videoUrl: 'https://www.youtube.com/embed/bR8B8tPb5Uw',
+    relatedGuideId: 'choking-emergency',
   },
   {
     id: 'cat-cpr',
@@ -154,7 +180,9 @@ export const videos: Video[] = [
     thumbnail: 'Cat',
     instructor: 'Dr. David Thompson, DVM',
     difficulty: 'Advanced',
-    views: 10550
+    views: 10550,
+    videoUrl: 'https://www.youtube.com/embed/dMUy8TWUQEA',
+    relatedGuideId: 'difficulty-breathing',
   },
   {
     id: 'bleeding-control',
@@ -166,7 +194,9 @@ export const videos: Video[] = [
     thumbnail: 'Blood',
     instructor: 'Dr. Steven Anderson, DVM',
     difficulty: 'Intermediate',
-    views: 12890
+    views: 12890,
+    videoUrl: 'https://www.youtube.com/embed/f1bWhb1UuHU',
+    relatedGuideId: 'bleeding-wounds',
   },
   {
     id: 'broken-bones',
@@ -178,7 +208,9 @@ export const videos: Video[] = [
     thumbnail: 'Bone',
     instructor: 'Dr. Amanda Martinez, DVM, Orthopedics',
     difficulty: 'Advanced',
-    views: 9320
+    views: 9320,
+    videoUrl: 'https://www.youtube.com/embed/vTZXYm1VJVM',
+    relatedGuideId: 'broken-bones',
   },
   {
     id: 'shock-recognition',
@@ -190,7 +222,9 @@ export const videos: Video[] = [
     thumbnail: 'Shock',
     instructor: 'Dr. Patricia Wong, DVM',
     difficulty: 'Intermediate',
-    views: 11240
+    views: 11240,
+    videoUrl: 'https://www.youtube.com/embed/lAqxVRsZwmA',
+    relatedGuideId: 'difficulty-breathing',
   },
   {
     id: 'eye-flush',
@@ -202,7 +236,9 @@ export const videos: Video[] = [
     thumbnail: 'Eye',
     instructor: 'Dr. Jennifer Lee, DVM, Ophthalmology',
     difficulty: 'Beginner',
-    views: 8970
+    views: 8970,
+    videoUrl: 'https://www.youtube.com/embed/kLWlOFxPuvo',
+    relatedGuideId: 'eye-injuries',
   },
   {
     id: 'guinea-pig-care',
@@ -214,7 +250,9 @@ export const videos: Video[] = [
     thumbnail: 'Small Pet',
     instructor: 'Dr. Karen Martinez, DVM',
     difficulty: 'Beginner',
-    views: 6840
+    views: 6840,
+    videoUrl: 'https://www.youtube.com/embed/5T_3hV5P8CE',
+    relatedGuideId: null,
   },
   {
     id: 'dehydration-check',
@@ -226,7 +264,9 @@ export const videos: Video[] = [
     thumbnail: 'Water',
     instructor: 'Dr. Michael Foster, DVM',
     difficulty: 'Beginner',
-    views: 10670
+    views: 10670,
+    videoUrl: 'https://www.youtube.com/embed/ywzXPyChvdQ',
+    relatedGuideId: 'vomiting-diarrhea',
   },
   {
     id: 'tick-removal',
@@ -238,7 +278,9 @@ export const videos: Video[] = [
     thumbnail: 'Bite',
     instructor: 'Dr. James Chen, DVM',
     difficulty: 'Beginner',
-    views: 15320
+    views: 15320,
+    videoUrl: 'https://www.youtube.com/embed/vKdwHUhtDcU',
+    relatedGuideId: 'insect-stings',
   },
   {
     id: 'vital-signs',
@@ -250,7 +292,9 @@ export const videos: Video[] = [
     thumbnail: 'Heart',
     instructor: 'Dr. Robert Kim, DVM',
     difficulty: 'Beginner',
-    views: 17540
+    views: 17540,
+    videoUrl: 'https://www.youtube.com/embed/M1FDFjm6aEY',
+    relatedGuideId: null,
   },
   {
     id: 'snake-bite',
@@ -262,7 +306,9 @@ export const videos: Video[] = [
     thumbnail: 'Snake',
     instructor: 'Dr. Emily Rodriguez, DVM',
     difficulty: 'Advanced',
-    views: 8190
+    views: 8190,
+    videoUrl: 'https://www.youtube.com/embed/Hsk8o0GJTqw',
+    relatedGuideId: 'insect-stings',
   },
   {
     id: 'birthing-emergency',
@@ -274,7 +320,9 @@ export const videos: Video[] = [
     thumbnail: 'Cat',
     instructor: 'Dr. Lisa Thompson, DVM',
     difficulty: 'Advanced',
-    views: 7650
+    views: 7650,
+    videoUrl: 'https://www.youtube.com/embed/4_A_dFUzqoU',
+    relatedGuideId: null,
   },
   {
     id: 'hamster-emergencies',
@@ -286,7 +334,9 @@ export const videos: Video[] = [
     thumbnail: 'Small Pet',
     instructor: 'Dr. David Thompson, DVM',
     difficulty: 'Beginner',
-    views: 5920
+    views: 5920,
+    videoUrl: 'https://www.youtube.com/embed/L2m5KJoWCWk',
+    relatedGuideId: null,
   },
   {
     id: 'allergic-reaction',
@@ -298,8 +348,10 @@ export const videos: Video[] = [
     thumbnail: 'Alert',
     instructor: 'Dr. Patricia Wong, DVM',
     difficulty: 'Intermediate',
-    views: 13480
-  }
+    views: 13480,
+    videoUrl: 'https://www.youtube.com/embed/UdPdYPf5MoE',
+    relatedGuideId: 'allergic-reactions',
+  },
 ];
 
 export const videoCategories = [
@@ -320,5 +372,5 @@ export const videoCategories = [
   'Assessment Skills',
   'Parasite Management',
   'Reproductive Emergencies',
-  'Allergic Emergencies'
+  'Allergic Emergencies',
 ];
