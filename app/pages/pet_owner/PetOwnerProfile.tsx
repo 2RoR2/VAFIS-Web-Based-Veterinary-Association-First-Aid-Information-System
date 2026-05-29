@@ -279,7 +279,7 @@ export function PetOwnerProfilePage({ onNavigate, currentUser, onUserUpdate }: P
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
         <div>
-          <h1 className="mb-1">Account Settings</h1>
+          <h1 className="mb-1">Profile Settings</h1>
           <p className="text-muted-foreground">Manage your profile details and security settings.</p>
         </div>
 
