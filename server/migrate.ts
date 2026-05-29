@@ -22,8 +22,6 @@ const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 await connection.query(schema);
 console.log('schema applied');
 
-});
-
 const addColumnIfMissing = async (table: string, column: string, definition: string) => {
   const [rows] = await connection.query<mysql.RowDataPacket[]>(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
