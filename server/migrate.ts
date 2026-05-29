@@ -1,7 +1,12 @@
 import dotenv from 'dotenv';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
 
 dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const connection = await mysql.createConnection({
   host: process.env.DB_HOST ?? 'localhost',
@@ -9,7 +14,13 @@ const connection = await mysql.createConnection({
   user: process.env.DB_USER ?? 'root',
   password: process.env.DB_PASSWORD ?? '',
   database: process.env.DB_NAME ?? 'vafis',
+  multipleStatements: true,
 });
+
+// Apply schema.sql first so base tables exist on a fresh database
+const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+await connection.query(schema);
+console.log('schema applied');
 
 const addColumnIfMissing = async (table: string, column: string, definition: string) => {
   const [rows] = await connection.query<mysql.RowDataPacket[]>(
