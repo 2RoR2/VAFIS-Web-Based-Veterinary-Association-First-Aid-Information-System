@@ -1,4 +1,4 @@
-import { MapPin, Search, Filter, Phone, AlertCircle, Navigation, Locate, X } from 'lucide-react';
+import { MapPin, Search, Filter, Phone, AlertCircle, Locate, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ClinicCard } from '../components/cards/ClinicCard';
 import clinicImage from '../assets/clinic-location-care.png';
@@ -10,9 +10,21 @@ interface ClinicsPageProps {
 }
 
 type FilterType = 'all' | 'emergency' | 'open';
+type LocationStatus = 'requesting' | 'granted' | 'denied' | 'manual';
 type UserCoords = { lat: number; lng: number } | null;
 
-/** Build the API URL based on current filter state */
+// Predefined Kuching areas used for manual location selection
+const KUCHING_AREAS = [
+  { label: 'Kuching City Centre',  lat: 1.5535, lng: 110.3493 },
+  { label: 'Tun Jugah / 3rd Mile', lat: 1.5261, lng: 110.3593 },
+  { label: 'Jalan Song',           lat: 1.5269, lng: 110.3784 },
+  { label: 'Stutong',              lat: 1.5128, lng: 110.3822 },
+  { label: 'Pending',              lat: 1.5534, lng: 110.3781 },
+  { label: 'Petra Jaya',           lat: 1.5716, lng: 110.3458 },
+  { label: 'Batu Kawa',            lat: 1.5163, lng: 110.2917 },
+  { label: 'Kota Samarahan',       lat: 1.4599, lng: 110.4983 },
+];
+
 const buildClinicUrl = (
   debouncedSearch: string,
   filterType: FilterType,
@@ -38,14 +50,47 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [userCoords, setUserCoords] = useState<UserCoords>(null);
-  const [loadingLocation, setLoadingLocation] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus | null>(null);
+  const [selectedArea, setSelectedArea] = useState('');
 
   // Debounce text search — 400 ms
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(searchTerm), 400);
     return () => clearTimeout(id);
   }, [searchTerm]);
+
+  // Auto-request location on mount via LocationService (browser Geolocation API)
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus('denied');
+      return;
+    }
+    setLocationStatus('requesting');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationStatus('granted');
+      },
+      () => {
+        // Access denied — prompt for manual entry
+        setLocationStatus('denied');
+      },
+      { timeout: 10000 },
+    );
+  }, []);
+
+  const handleManualAreaSubmit = () => {
+    const area = KUCHING_AREAS.find((a) => a.label === selectedArea);
+    if (!area) return;
+    setUserCoords({ lat: area.lat, lng: area.lng });
+    setLocationStatus('manual');
+  };
+
+  const handleClearLocation = () => {
+    setUserCoords(null);
+    setLocationStatus('denied');
+    setSelectedArea('');
+  };
 
   const clinicUrl = useMemo(
     () => buildClinicUrl(debouncedSearch, filterType, userCoords),
@@ -65,36 +110,10 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clinic.name}, ${clinic.address}, ${clinic.city}`)}`;
   };
 
-  const handleUseMyLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser.');
-      return;
-    }
-    setLoadingLocation(true);
-    setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLoadingLocation(false);
-      },
-      () => {
-        setLoadingLocation(false);
-        setLocationError('Unable to get your location. Please allow location access in your browser.');
-      },
-      { timeout: 10000 },
-    );
-  };
-
-  const handleClearLocation = () => {
-    setUserCoords(null);
-    setLocationError(null);
-  };
-
-  const getDistanceLabel = (clinic: Clinic) => {
-    if (typeof clinic.distanceKm === 'number') {
-      return `${clinic.distanceKm} km away`;
-    }
-    return clinic.distance;
+  const getDistanceLabel = (clinic: Clinic): string | undefined => {
+    if (!userCoords) return undefined;
+    if (typeof clinic.distanceKm === 'number') return `${clinic.distanceKm} km away`;
+    return undefined;
   };
 
   return (
@@ -112,6 +131,42 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
         )}
         {isLoading && !loadError && (
           <p className="mb-4 text-sm text-muted-foreground">Loading clinics...</p>
+        )}
+
+        {/* Location banner — shown while requesting or when denied */}
+        {locationStatus === 'requesting' && (
+          <div className="mb-6 rounded-lg border border-border bg-white px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
+            <Locate className="w-4 h-4 animate-pulse shrink-0" />
+            Requesting your location to find nearby clinics…
+          </div>
+        )}
+
+        {locationStatus === 'denied' && (
+          <div className="mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4">
+            <p className="text-sm font-medium mb-3 flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Location access was denied. Select your area to find nearby clinics:
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                value={selectedArea}
+                onChange={(e) => setSelectedArea(e.target.value)}
+                className="flex-1 px-3 py-2 border border-input rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">— Choose your area —</option>
+                {KUCHING_AREAS.map((area) => (
+                  <option key={area.label} value={area.label}>{area.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleManualAreaSubmit}
+                disabled={!selectedArea}
+                className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Find Nearby Clinics
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Emergency contacts banner */}
@@ -143,7 +198,6 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
         {/* Search + filter bar */}
         <div className="bg-white rounded-lg border border-border p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4 mb-4">
-            {/* Text search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <input
@@ -155,9 +209,8 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
               />
             </div>
 
-            {/* Type filter */}
             <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <Filter className="w-5 h-5 text-muted-foreground shrink-0" />
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as FilterType)}
@@ -169,36 +222,42 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
               </select>
             </div>
 
-            {/* Use my location */}
+            {/* Location status button */}
             {userCoords ? (
               <button
                 onClick={handleClearLocation}
                 className="flex items-center gap-2 px-4 py-2 bg-success/10 text-success border border-success/30 rounded-md hover:bg-success/20 transition-colors text-sm whitespace-nowrap"
               >
                 <MapPin className="w-4 h-4" />
-                Sorted by distance
+                {locationStatus === 'manual' ? `Near ${selectedArea}` : 'Sorted by distance'}
                 <X className="w-3.5 h-3.5 ml-1" />
               </button>
             ) : (
               <button
-                onClick={handleUseMyLocation}
-                disabled={loadingLocation}
+                onClick={() => {
+                  setLocationStatus('requesting');
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                      setLocationStatus('granted');
+                    },
+                    () => setLocationStatus('denied'),
+                    { timeout: 10000 },
+                  );
+                }}
+                disabled={locationStatus === 'requesting'}
                 className="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Locate className="w-4 h-4" />
-                {loadingLocation ? 'Getting location…' : 'Use my location'}
+                {locationStatus === 'requesting' ? 'Getting location…' : 'Use my location'}
               </button>
             )}
           </div>
 
-          {locationError && (
-            <p className="text-xs text-destructive mb-3">{locationError}</p>
-          )}
-
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               Showing {clinics.length} clinic{clinics.length !== 1 ? 's' : ''}
-              {userCoords ? ' — sorted by distance from you' : ''}
+              {userCoords ? ' — sorted by distance' : ''}
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -239,6 +298,8 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
                 setSearchTerm('');
                 setFilterType('all');
                 setUserCoords(null);
+                setLocationStatus(null);
+                setSelectedArea('');
               }}
               className="text-primary hover:underline"
             >
