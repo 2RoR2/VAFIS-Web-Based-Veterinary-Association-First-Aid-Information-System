@@ -4,6 +4,7 @@ import { ClinicCard } from '../components/cards/ClinicCard';
 import clinicImage from '../assets/clinic-location-care.png';
 import { useApiData } from '../hooks/useApiData';
 import { Clinic, EmergencyContact } from '../types/content';
+import { LocationService } from '../services/LocationService';
 
 interface ClinicsPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -59,24 +60,18 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
     return () => clearTimeout(id);
   }, [searchTerm]);
 
-  // Auto-request location on mount via LocationService (browser Geolocation API)
+  // Auto-request location on mount via LocationService
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationStatus('denied');
-      return;
-    }
     setLocationStatus('requesting');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    LocationService.getCurrentCoordinates({ timeout: 10000 })
+      .then((coords) => {
+        setUserCoords(coords);
         setLocationStatus('granted');
-      },
-      () => {
-        // Access denied — prompt for manual entry
+      })
+      .catch(() => {
+        // Access denied or unsupported — prompt for manual entry
         setLocationStatus('denied');
-      },
-      { timeout: 10000 },
-    );
+      });
   }, []);
 
   const handleManualAreaSubmit = () => {
@@ -236,14 +231,12 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
               <button
                 onClick={() => {
                   setLocationStatus('requesting');
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                      setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                  LocationService.getCurrentCoordinates({ timeout: 10000 })
+                    .then((coords) => {
+                      setUserCoords(coords);
                       setLocationStatus('granted');
-                    },
-                    () => setLocationStatus('denied'),
-                    { timeout: 10000 },
-                  );
+                    })
+                    .catch(() => setLocationStatus('denied'));
                 }}
                 disabled={locationStatus === 'requesting'}
                 className="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
