@@ -2,6 +2,11 @@ import jwt from 'jsonwebtoken';
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'vafis-dev-access-secret-change-in-production';
 
+/**
+ * Enforces authentication on a route. Reads the accessToken httpOnly cookie,
+ * verifies the JWT signature, and attaches the decoded payload to req.user.
+ * Responds 401 if the token is missing, invalid, or expired.
+ */
 export const requireAuth = (req, res, next) => {
   const token = req.cookies?.accessToken;
 
@@ -23,6 +28,11 @@ export const requireAuth = (req, res, next) => {
   }
 };
 
+/**
+ * Middleware factory that enforces role-based access control.
+ * Must follow requireAuth so req.user is already populated.
+ * Responds 403 if the authenticated user's role is not in the allowed list.
+ */
 export const requireRole = (...roles) => (req, res, next) => {
   if (!req.user) {
     res.status(401).json({ error: 'Authentication required.' });
@@ -35,7 +45,11 @@ export const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
-// Attach user if cookie present, but do not block unauthenticated requests
+/**
+ * Attaches the authenticated user to req.user when a valid accessToken cookie is present,
+ * but does not block unauthenticated requests. Used on routes that serve different content
+ * depending on whether the caller is logged in.
+ */
 export const optionalAuth = (req, _res, next) => {
   const token = req.cookies?.accessToken;
   if (!token) { next(); return; }
@@ -44,7 +58,7 @@ export const optionalAuth = (req, _res, next) => {
     const payload = jwt.verify(token, JWT_ACCESS_SECRET);
     if (payload.type === 'access') req.user = payload;
   } catch {
-    // invalid / expired — treat as unauthenticated
+    // invalid / expired - treat as unauthenticated
   }
   next();
 };
