@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 
 const SALT_ROUNDS = 10;
 
+// Maps a database user row to the public-facing veterinary professional object.
 const mapVet = (row) => ({
   id:          row.id,
   fullName:    row.fullName,
@@ -15,6 +16,7 @@ const mapVet = (row) => ({
 
 // ── GET /api/admin/vets ───────────────────────────────────────────────────────
 
+// Returns all users with the 'professional' role, ordered alphabetically by name.
 export const listVets = (pool) => async (_req, res) => {
   const [rows] = await pool.query(
     `SELECT id, fullName, email, isSuspended, createdAt
@@ -26,6 +28,7 @@ export const listVets = (pool) => async (_req, res) => {
 
 // ── GET /api/admin/vets/:id ───────────────────────────────────────────────────
 
+// Returns a single veterinary professional by their user ID. Responds 404 if not found.
 export const getVetById = (pool) => async (req, res) => {
   const [rows] = await pool.query(
     `SELECT id, fullName, email, isSuspended, createdAt
@@ -38,6 +41,10 @@ export const getVetById = (pool) => async (req, res) => {
 
 // ── POST /api/admin/vets ──────────────────────────────────────────────────────
 
+/**
+ * Creates a new veterinary professional account.
+ * Hashes the provided password before storage and rejects duplicate emails.
+ */
 export const createVet = (pool) => async (req, res) => {
   const { fullName, email, password } = req.body ?? {};
 
@@ -75,6 +82,10 @@ export const createVet = (pool) => async (req, res) => {
 
 // ── PUT /api/admin/vets/:id/suspend ──────────────────────────────────────────
 
+/**
+ * Toggles the suspended state of a veterinary professional account.
+ * Suspended accounts are blocked from logging in.
+ */
 export const toggleSuspend = (pool) => async (req, res) => {
   const [rows] = await pool.query(
     `SELECT id, fullName, email, isSuspended, createdAt

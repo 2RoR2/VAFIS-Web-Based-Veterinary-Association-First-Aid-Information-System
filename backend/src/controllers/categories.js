@@ -1,22 +1,29 @@
 import crypto from 'node:crypto';
 
+// Maps a database category row to the public-facing category object.
 const mapCategory = (row) => ({
   id:          row.id,
   name:        row.name,
   description: row.description ?? '',
 });
 
+// Returns all content categories ordered alphabetically.
 export const getCategories = (pool) => async (_req, res) => {
   const [rows] = await pool.query('SELECT * FROM categories ORDER BY name ASC');
   res.json(rows.map(mapCategory));
 };
 
+// Returns a single category by ID. Responds 404 if not found.
 export const getCategoryById = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [req.params.id]);
   if (!rows[0]) { res.status(404).json({ error: 'Category not found.' }); return; }
   res.json(mapCategory(rows[0]));
 };
 
+/**
+ * Creates a new content category.
+ * Rejects the request if a category with the same name already exists.
+ */
 export const createCategory = (pool) => async (req, res) => {
   const { name, description } = req.body ?? {};
 
@@ -43,6 +50,10 @@ export const createCategory = (pool) => async (req, res) => {
   res.status(201).json(mapCategory(created[0]));
 };
 
+/**
+ * Updates an existing category's name and/or description.
+ * Rejects the request if the new name conflicts with another category.
+ */
 export const updateCategory = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [req.params.id]);
   const existing = rows[0];
@@ -73,6 +84,7 @@ export const updateCategory = (pool) => async (req, res) => {
   res.json(mapCategory(updated[0]));
 };
 
+// Permanently deletes a category. Responds 404 if not found.
 export const deleteCategory = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM categories WHERE id = ?', [req.params.id]);
   if (!rows[0]) { res.status(404).json({ error: 'Category not found.' }); return; }
