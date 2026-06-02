@@ -7,6 +7,7 @@ interface ManageUserListPageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Vet professional account list page showing status badges, registration date, and a link to the detail/manage page.
 export function ManageUserListPage({ onNavigate }: ManageUserListPageProps) {
   const [vets, setVets]     = useState<VetAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,7 @@ export function ManageUserListPage({ onNavigate }: ManageUserListPageProps) {
     return () => controller.abort();
   }, []);
 
+  // Formats an ISO date string to a short human-readable date in Malaysian locale, or returns '—' for missing dates.
   const formatDate = (iso: string) => {
     if (!iso) return '—';
     try { return new Date(iso).toLocaleDateString('en-MY', { year: 'numeric', month: 'short', day: 'numeric' }); }

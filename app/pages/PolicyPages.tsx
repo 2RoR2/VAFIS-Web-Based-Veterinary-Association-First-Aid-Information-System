@@ -70,6 +70,7 @@ const privacy = [
   },
 ];
 
+// Renders the Terms of Use page by passing the terms data to PolicyLayout.
 export function TermsPage({ onNavigate }: PolicyPageProps) {
   return (
     <PolicyLayout
@@ -83,6 +84,7 @@ export function TermsPage({ onNavigate }: PolicyPageProps) {
   );
 }
 
+// Renders the Privacy Policy page by passing the privacy data to PolicyLayout.
 export function PrivacyPage({ onNavigate }: PolicyPageProps) {
   return (
     <PolicyLayout
@@ -96,6 +98,7 @@ export function PrivacyPage({ onNavigate }: PolicyPageProps) {
   );
 }
 
+// Shared layout for both policy pages, rendering an icon, title, description, effective date, and a list of policy sections.
 function PolicyLayout({
   icon: Icon,
   eyebrow,

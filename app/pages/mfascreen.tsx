@@ -9,6 +9,7 @@ interface MfaScreenPageProps {
   onAuthSuccess: (user: AuthUser) => void;
 }
 
+// Renders the 6-digit OTP entry screen for MFA login, with digit-by-digit input boxes and paste support.
 export function MfaScreenPage({ onNavigate, tempToken, onAuthSuccess }: MfaScreenPageProps) {
   const [digits, setDigits]   = useState<string[]>(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,7 @@ export function MfaScreenPage({ onNavigate, tempToken, onAuthSuccess }: MfaScree
 
   // ── Digit box handlers ────────────────────────────────────────────────────
 
+  // Updates the digit at the given index and auto-advances focus to the next box when a digit is entered.
   const handleChange = (index: number, value: string) => {
     // Accept only the last digit typed (handles autofill that dumps all chars at once)
     const digit = value.replace(/\D/g, '').slice(-1);
@@ -35,6 +37,7 @@ export function MfaScreenPage({ onNavigate, tempToken, onAuthSuccess }: MfaScree
     }
   };
 
+  // Handles Backspace (clear or move back) and arrow key navigation between OTP digit boxes.
   const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
       if (digits[index]) {
@@ -53,6 +56,7 @@ export function MfaScreenPage({ onNavigate, tempToken, onAuthSuccess }: MfaScree
     }
   };
 
+  // Handles paste events by extracting up to 6 digits from the clipboard and distributing them across the input boxes.
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
@@ -71,6 +75,7 @@ export function MfaScreenPage({ onNavigate, tempToken, onAuthSuccess }: MfaScree
   const otp = digits.join('');
   const isComplete = otp.length === 6;
 
+  // Submits the OTP to the MFA verify endpoint. On success, calls onAuthSuccess; on failure, clears the digit boxes.
   const handleVerify = async () => {
     if (!isComplete) {
       setError('Please enter all 6 digits.');

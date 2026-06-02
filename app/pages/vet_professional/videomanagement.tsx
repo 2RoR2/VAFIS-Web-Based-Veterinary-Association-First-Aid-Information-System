@@ -19,7 +19,8 @@ const DIFFICULTY_CLASSES: Record<string, string> = {
   Advanced: 'bg-red-100 text-red-700',
 };
 
-// ── Video List ────────────────────────────────────────────────────────────────
+// Lists educational videos linked to guides the current vet has reviewed, with search and species filters.
+// Falls back to showing all videos when no guide-linked matches are found.
 
 interface VetVideoListPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -199,7 +200,7 @@ export function VetVideoListPage({ onNavigate, currentUser }: VetVideoListPagePr
   );
 }
 
-// ── Edit Video ────────────────────────────────────────────────────────────────
+// Edit form for a single video's metadata and content details, restricted to veterinary professionals.
 
 interface VetEditVideoPageProps {
   onNavigate: (page: string, data?: any) => void;
@@ -265,11 +266,13 @@ export function VetEditVideoPage({ onNavigate, videoId = '' }: VetEditVideoPageP
     return () => controller.abort();
   }, [videoId]);
 
+  // Updates a single field in the video form state by key.
   const updateField = <K extends keyof VideoForm>(key: K, value: VideoForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const isValid = form.title.trim() !== '' && form.species !== '' && form.category !== '';
 
+  // Validates the form and PUTs the updated video data to the API, navigating back to the video list on success.
   const handleSave = async () => {
     if (!isValid) return;
     setSaving(true);

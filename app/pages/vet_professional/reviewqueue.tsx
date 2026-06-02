@@ -9,6 +9,7 @@ interface ReviewQueuePageProps {
 
 const SPECIES_OPTIONS = ['Dogs', 'Cats', 'Birds', 'Rabbits', 'Hamsters', 'Fish', 'Reptiles'];
 
+// Lists all guides currently pending clinical review, with title search and species filter, linking to the review page.
 export function ReviewQueuePage({ onNavigate }: ReviewQueuePageProps) {
   const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,7 @@ export function ReviewQueuePage({ onNavigate }: ReviewQueuePageProps) {
     return matchSearch && matchSpecies;
   });
 
+  // Formats an ISO date string to a human-readable date in Malaysian locale, or returns '—' for missing dates.
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });

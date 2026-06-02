@@ -18,6 +18,7 @@ const CHECKLIST = [
   'Vet Professional review comments have been addressed (if any).',
 ];
 
+// Admin guide approval page that presents a guide summary, vet review details, and a mandatory checklist before publishing.
 export function ApproveGuidePage({ onNavigate, guideId }: ApproveGuidePageProps) {
   const [guide, setGuide] = useState<Guide | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,11 +36,13 @@ export function ApproveGuidePage({ onNavigate, guideId }: ApproveGuidePageProps)
       .finally(() => setLoading(false));
   }, [guideId]);
 
+  // Toggles the checked state of the checklist item at the given index.
   const toggleCheck = (index: number) =>
     setChecked((prev) => prev.map((v, i) => (i === index ? !v : v)));
 
   const allChecked = checked.every(Boolean);
 
+  // POSTs to the publish endpoint after all checklist items are confirmed, then navigates back to the guide list.
   const handlePublish = async () => {
     if (!allChecked || !guideId) return;
     setPublishing(true);

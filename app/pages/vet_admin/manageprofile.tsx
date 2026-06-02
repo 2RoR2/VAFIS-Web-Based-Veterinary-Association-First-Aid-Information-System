@@ -9,11 +9,10 @@ interface AdminProfilePageProps {
   onUserUpdate: (user: AuthUser) => void;
 }
 
-// ── Shared helpers ─────────────────────────────────────────────────────────────
-
 const inputCls =
   'w-full px-3 py-2 border border-border rounded-md text-sm bg-white focus:outline-none focus:ring-1 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground';
 
+// Shared card wrapper that renders a titled section with an icon header and slotted content.
 const SectionCard = ({
   title,
   icon: Icon,
@@ -32,6 +31,7 @@ const SectionCard = ({
   </div>
 );
 
+// Inline success feedback banner with a check icon and green styling.
 const SuccessBanner = ({ message }: { message: string }) => (
   <div className="flex items-center gap-2 px-4 py-3 bg-success/10 border border-success/30 rounded-md text-sm text-success">
     <CheckCircle className="w-4 h-4 flex-shrink-0" />
@@ -39,14 +39,14 @@ const SuccessBanner = ({ message }: { message: string }) => (
   </div>
 );
 
+// Inline error feedback banner with destructive styling.
 const ErrorBanner = ({ message }: { message: string }) => (
   <div className="px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-md text-sm text-destructive">
     {message}
   </div>
 );
 
-// ── Section 1: Profile Information ────────────────────────────────────────────
-
+// Profile information section that lets the admin update their full name and email.
 function ProfileSection({
   currentUser,
   onUserUpdate,
@@ -60,6 +60,7 @@ function ProfileSection({
   const [success, setSuccess]   = useState('');
   const [error, setError]       = useState('');
 
+  // Validates name/email and PUTs the updated profile, then propagates the change to the parent app state.
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) { setError('Full name is required.'); return; }
@@ -133,8 +134,7 @@ function ProfileSection({
   );
 }
 
-// ── Section 2: Change Password ─────────────────────────────────────────────────
-
+// Change password section with current, new, and confirm password fields.
 function PasswordSection() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword]         = useState('');
@@ -145,6 +145,7 @@ function PasswordSection() {
   const [success, setSuccess]                 = useState('');
   const [error, setError]                     = useState('');
 
+  // Validates password fields and PUTs the new password to the API, clearing the form on success.
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!currentPassword) { setError('Current password is required.'); return; }
@@ -168,6 +169,7 @@ function PasswordSection() {
     }
   };
 
+  // Labeled password input with a show/hide toggle button.
   const PasswordInput = ({
     label,
     value,
@@ -253,10 +255,9 @@ function PasswordSection() {
   );
 }
 
-// ── Section 3: Two-Factor Authentication ──────────────────────────────────────
-
 type MfaUiState = 'idle' | 'initiating' | 'verifying' | 'disabling';
 
+// 2FA management section that loads current MFA status and lets the admin enable or disable two-factor authentication.
 function MfaSection() {
   const [mfaEnabled, setMfaEnabled]   = useState<boolean | null>(null);
   const [uiState, setUiState]         = useState<MfaUiState>('idle');
@@ -283,13 +284,14 @@ function MfaSection() {
     }
   }, [uiState]);
 
+  // Resets the MFA UI to the idle state and clears the OTP input and error.
   const reset = () => {
     setUiState('idle');
     setOtp('');
     setError('');
   };
 
-  // Step 1: request OTP to be emailed
+  // Calls the MFA initiate endpoint to send an OTP email and transitions the UI to the verification step.
   const handleInitiateEnable = async () => {
     setLoading(true);
     setError('');
@@ -307,7 +309,7 @@ function MfaSection() {
     }
   };
 
-  // Step 2: verify OTP and enable MFA
+  // Validates the 6-digit OTP and posts it to the MFA enable/verify endpoint to activate 2FA on the account.
   const handleVerifyEnable = async (e: FormEvent) => {
     e.preventDefault();
     const code = otp.trim();
@@ -329,7 +331,7 @@ function MfaSection() {
     }
   };
 
-  // Disable MFA
+  // Calls the MFA disable endpoint to turn off two-factor authentication for the account.
   const handleDisable = async () => {
     setLoading(true);
     setError('');
@@ -457,8 +459,7 @@ function MfaSection() {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
-
+// Admin account settings page composing sections for profile info, password change, and 2FA management.
 export function AdminProfilePage({ onNavigate: _onNavigate, currentUser, onUserUpdate }: AdminProfilePageProps) {
   return (
     <div className="min-h-screen bg-background py-8">

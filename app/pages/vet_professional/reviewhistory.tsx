@@ -13,18 +13,21 @@ const SPECIES_OPTIONS = ['Dogs', 'Cats', 'Birds', 'Rabbits', 'Hamsters', 'Fish',
 
 const REVIEWED_STATUSES = ['reviewed', 'revision_required', 'published'];
 
+// Returns the human-readable outcome label for a given guide status string.
 const outcomeLabel = (status: string) => {
   if (status === 'revision_required') return 'Changes Requested';
   if (status === 'published') return 'Approved & Published';
   return 'Approved';
 };
 
+// Returns the Tailwind badge class string for a given guide status outcome.
 const outcomeClasses = (status: string) => {
   if (status === 'revision_required') return 'bg-yellow-100 text-yellow-700';
   if (status === 'published') return 'bg-blue-100 text-blue-700';
   return 'bg-green-100 text-green-700';
 };
 
+// Lists guides that the current veterinary professional has previously reviewed, with search and species filters.
 export function ReviewHistoryPage({ onNavigate, currentUser }: ReviewHistoryPageProps) {
   const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,7 @@ export function ReviewHistoryPage({ onNavigate, currentUser }: ReviewHistoryPage
     return matchSearch && matchSpecies;
   });
 
+  // Formats an ISO date string to a human-readable date in Malaysian locale, or returns '—' for missing dates.
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });

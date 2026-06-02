@@ -9,11 +9,13 @@ interface VetHeaderProps {
   onLogout: () => void;
 }
 
+// Returns the CSS class string for a nav button, applying active styles when the given condition is true.
 const navItem = (active: boolean) =>
   `px-3 py-2 rounded-md transition-colors text-sm ${
     active ? 'bg-secondary text-secondary-foreground' : 'hover:bg-muted'
   }`;
 
+// Renders the veterinary professional navigation header with review queue, history, video links, and notification count.
 export function VetHeader({ onNavigate, currentPage, currentUser, onLogout }: VetHeaderProps) {
   const [notificationCount, setNotificationCount] = useState(0);
 

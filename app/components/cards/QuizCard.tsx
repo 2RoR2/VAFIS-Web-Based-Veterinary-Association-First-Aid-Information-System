@@ -9,6 +9,7 @@ interface QuizCardProps {
   onClick: () => void;
 }
 
+// Displays a quiz card with title, question count, species, and optional completion score.
 export function QuizCard({ title, questions, species, completed, score, onClick }: QuizCardProps) {
   return (
     <button

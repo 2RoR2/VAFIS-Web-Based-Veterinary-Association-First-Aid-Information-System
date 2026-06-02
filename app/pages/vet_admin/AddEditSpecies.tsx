@@ -15,6 +15,7 @@ const emptyForm = {
   commonEmergencies: [] as string[],
 };
 
+// Add/edit form for a species record including name, icon emoji, description, and a list of common emergencies.
 export function AddEditSpeciesPage({ onNavigate, speciesId }: AddEditSpeciesPageProps) {
   const isEdit = Boolean(speciesId);
 
@@ -42,9 +43,11 @@ export function AddEditSpeciesPage({ onNavigate, speciesId }: AddEditSpeciesPage
 
   /* ── Field helpers ─────────────────────────────────────────────────────── */
 
+  // Updates a single string field in the species form state by key.
   const setField = (key: keyof typeof form, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  // Adds the current emergency input text to the commonEmergencies list if it is non-empty and not a duplicate.
   const addEmergency = () => {
     const trimmed = emergencyInput.trim();
     if (!trimmed) return;
@@ -56,6 +59,7 @@ export function AddEditSpeciesPage({ onNavigate, speciesId }: AddEditSpeciesPage
     setEmergencyInput('');
   };
 
+  // Removes the given emergency item from the commonEmergencies list.
   const removeEmergency = (item: string) =>
     setForm((prev) => ({
       ...prev,
@@ -64,6 +68,7 @@ export function AddEditSpeciesPage({ onNavigate, speciesId }: AddEditSpeciesPage
 
   /* ── Validation ────────────────────────────────────────────────────────── */
 
+  // Returns a map of field-level validation errors; an empty object means the form is valid.
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim())  e.name = 'Name is required.';
@@ -73,6 +78,7 @@ export function AddEditSpeciesPage({ onNavigate, speciesId }: AddEditSpeciesPage
 
   /* ── Submit ────────────────────────────────────────────────────────────── */
 
+  // Validates the form, then POSTs a new species or PUTs an update, and navigates back to the list on success.
   const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }

@@ -12,6 +12,7 @@ interface UpdateProfileResponse {
   user: { fullName: string; email: string; role: string };
 }
 
+// Account settings page for veterinary professionals with sections for updating profile details and changing password.
 export function VetProfilePage({ onNavigate, currentUser, onUserUpdate }: VetProfilePageProps) {
   // ── Account Details form ─────────────────────────────────────────────────
   const [fullName, setFullName] = useState(currentUser?.name ?? '');
@@ -20,6 +21,7 @@ export function VetProfilePage({ onNavigate, currentUser, onUserUpdate }: VetPro
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
 
+  // Validates and PUTs the updated name and email to the profile API, then propagates the change to the parent.
   const handleProfileSave = async () => {
     if (!fullName.trim() || !email.trim()) {
       setProfileError('Full name and email are required.');
@@ -54,6 +56,7 @@ export function VetProfilePage({ onNavigate, currentUser, onUserUpdate }: VetPro
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
+  // Validates password fields and PUTs the new password to the API, clearing the form on success.
   const handlePasswordSave = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError('All password fields are required.');

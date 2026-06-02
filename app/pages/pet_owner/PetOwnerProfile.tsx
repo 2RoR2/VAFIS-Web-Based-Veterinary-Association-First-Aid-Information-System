@@ -13,10 +13,7 @@ interface UpdateProfileResponse {
   user: { fullName: string; email: string; role: string };
 }
 
-// ── MFA Section ───────────────────────────────────────────────────────────────
-
-type MfaUiState = 'idle' | 'initiating' | 'verifying' | 'disabling';
-
+// Manages the 2FA enable/disable flow: loads current MFA status, triggers OTP email, and verifies the code.
 function MfaSection() {
   const [mfaEnabled, setMfaEnabled]       = useState<boolean | null>(null);
   const [uiState, setUiState]             = useState<MfaUiState>('idle');
@@ -39,8 +36,10 @@ function MfaSection() {
     if (uiState === 'verifying') setTimeout(() => otpRef.current?.focus(), 50);
   }, [uiState]);
 
+  // Resets the MFA UI to the idle state and clears the OTP input and error.
   const reset = () => { setUiState('idle'); setOtp(''); setError(''); };
 
+  // Calls the MFA initiate endpoint to send an OTP email and transitions the UI to the verification step.
   const handleInitiateEnable = async () => {
     setLoading(true); setError(''); setSuccess(''); setUiState('initiating');
     try {
@@ -55,6 +54,7 @@ function MfaSection() {
     }
   };
 
+  // Validates the 6-digit OTP and posts it to the MFA enable/verify endpoint to activate 2FA on the account.
   const handleVerifyEnable = async (e: FormEvent) => {
     e.preventDefault();
     const code = otp.trim();
@@ -75,6 +75,7 @@ function MfaSection() {
     }
   };
 
+  // Calls the MFA disable endpoint to turn off two-factor authentication for the account.
   const handleDisable = async () => {
     setLoading(true); setError(''); setSuccess(''); setUiState('disabling');
     try {
@@ -207,6 +208,7 @@ function MfaSection() {
   );
 }
 
+// Account settings page for pet owners with sections for updating profile details, changing password, and managing 2FA.
 export function PetOwnerProfilePage({ onNavigate, currentUser, onUserUpdate }: PetOwnerProfilePageProps) {
   const [fullName, setFullName] = useState(currentUser?.name ?? '');
   const [email, setEmail] = useState(currentUser?.email ?? '');
@@ -214,6 +216,7 @@ export function PetOwnerProfilePage({ onNavigate, currentUser, onUserUpdate }: P
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
 
+  // Validates and PUTs the updated name and email to the profile API, then propagates the change to the parent.
   const handleProfileSave = async () => {
     if (!fullName.trim() || !email.trim()) {
       setProfileError('Full name and email are required.');
@@ -243,6 +246,7 @@ export function PetOwnerProfilePage({ onNavigate, currentUser, onUserUpdate }: P
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
+  // Validates password fields and PUTs the new password to the API, clearing the form on success.
   const handlePasswordSave = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError('All password fields are required.');

@@ -19,16 +19,19 @@ const contentSubPages = [
 const guideSubPages = ['admin-guide-list', 'admin-guide-create', 'admin-guide-edit', 'admin-guide-detail', 'admin-guide-approve'];
 const vetSubPages   = ['admin-vet-list', 'admin-vet-add', 'admin-vet-detail'];
 
+// Returns the CSS class string for a nav button, applying active styles when the given condition is true.
 const navItem = (active: boolean) =>
   `px-3 py-2 rounded-md transition-colors text-sm ${
     active ? 'bg-secondary text-secondary-foreground' : 'hover:bg-muted'
   }`;
 
+// Renders the administrator navigation header with a Content dropdown, guide/user/feedback links, notifications, and profile access.
 export function AdminHeader({ onNavigate, currentPage, currentUser, onLogout }: AdminHeaderProps) {
   const [contentOpen, setContentOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Closes the Content dropdown when the user clicks outside of it.
     function handleClickOutside(e: MouseEvent) {
       if (contentRef.current && !contentRef.current.contains(e.target as Node)) {
         setContentOpen(false);
@@ -38,6 +41,7 @@ export function AdminHeader({ onNavigate, currentPage, currentUser, onLogout }: 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Closes the Content dropdown then navigates to the given page.
   const navigate = (page: string) => {
     setContentOpen(false);
     onNavigate(page);

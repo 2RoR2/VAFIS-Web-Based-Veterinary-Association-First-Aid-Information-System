@@ -10,6 +10,7 @@ interface QuizPageProps {
   currentUser?: AuthUser | null;
 }
 
+// Manages the full quiz experience: list view with species/category filters, active quiz question flow, and a results summary screen.
 export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
   const [activeQuizId, setActiveQuizId] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -61,6 +62,7 @@ export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
       .finally(() => setSubmitting(false));
   }, [showResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Initialises all quiz state variables and sets the active quiz ID to begin the question flow.
   const handleStartQuiz = (quizId: string) => {
     setActiveQuizId(quizId);
     setCurrentQuestion(0);
@@ -72,12 +74,14 @@ export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
     setUserAnswers([]);
   };
 
+  // Records the selected answer and locks all options so feedback can be shown.
   const handleAnswer = (answerIndex: number) => {
     if (feedbackShown) return; // locked after first selection
     setSelectedAnswer(answerIndex);
     setFeedbackShown(true);
   };
 
+  // Records the current answer, advances to the next question, or transitions to the results screen if the quiz is finished.
   const handleNext = () => {
     if (selectedAnswer === null || !activeQuiz) return;
 
@@ -99,6 +103,7 @@ export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
     }
   };
 
+  // Resets all quiz progress state to restart the same quiz from the first question.
   const handleRetake = () => {
     setCurrentQuestion(0);
     setSelectedAnswer(null);
@@ -211,6 +216,7 @@ export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
     const correctIndex = question.correct;
     const isLastQuestion = currentQuestion === activeQuiz.questions.length - 1;
 
+    // Returns the CSS class string for an answer option based on selection and feedback state.
     const getOptionStyle = (idx: number) => {
       if (!feedbackShown) {
         // No answer yet — just highlight selected
@@ -228,6 +234,7 @@ export function QuizPage({ onNavigate, currentUser }: QuizPageProps) {
       return 'border-border opacity-60 cursor-default';
     };
 
+    // Returns the CSS class string for the radio circle indicator based on selection and feedback state.
     const getCircleStyle = (idx: number) => {
       if (!feedbackShown) {
         return selectedAnswer === idx

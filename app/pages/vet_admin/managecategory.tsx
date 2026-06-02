@@ -7,6 +7,7 @@ interface ManageCategoryListPageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Category management list page with add, edit, and delete actions and a confirmation modal for deletion.
 export function ManageCategoryListPage({ onNavigate }: ManageCategoryListPageProps) {
   const [categories, setCategories]     = useState<ContentCategory[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -23,6 +24,7 @@ export function ManageCategoryListPage({ onNavigate }: ManageCategoryListPagePro
     return () => controller.abort();
   }, []);
 
+  // DELETEs the targeted category via the API and removes it from the local list on success.
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);

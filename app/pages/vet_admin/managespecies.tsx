@@ -7,6 +7,7 @@ interface ManageSpeciesListPageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Species management list page with add, edit, and delete actions and a confirmation modal for deletion.
 export function ManageSpeciesListPage({ onNavigate }: ManageSpeciesListPageProps) {
   const [speciesList, setSpeciesList] = useState<Species[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -23,6 +24,7 @@ export function ManageSpeciesListPage({ onNavigate }: ManageSpeciesListPageProps
     return () => controller.abort();
   }, []);
 
+  // DELETEs the targeted species via the API and removes it from the local list on success.
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);

@@ -13,6 +13,7 @@ interface ClinicCardProps {
   directionsUrl: string;
 }
 
+// Displays a veterinary clinic with address, phone, hours, open/emergency status, and action buttons.
 export function ClinicCard({ name, address, phone, hours, distance, isOpen, isEmergency, imageSrc, directionsUrl }: ClinicCardProps) {
   const [mapFailed, setMapFailed] = useState(false);
 

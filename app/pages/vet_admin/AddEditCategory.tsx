@@ -13,6 +13,7 @@ const emptyForm = {
   description: '',
 };
 
+// Add/edit form for a content category. Loads existing data when editing; validates and POSTs or PUTs on save.
 export function AddEditCategoryPage({ onNavigate, categoryId }: AddEditCategoryPageProps) {
   const isEdit = Boolean(categoryId);
 
@@ -34,6 +35,7 @@ export function AddEditCategoryPage({ onNavigate, categoryId }: AddEditCategoryP
 
   /* ── Validation ────────────────────────────────────────────────────────── */
 
+  // Returns a map of field-level validation errors; an empty object means the form is valid.
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = 'Category name is required.';
@@ -42,6 +44,7 @@ export function AddEditCategoryPage({ onNavigate, categoryId }: AddEditCategoryP
 
   /* ── Submit ────────────────────────────────────────────────────────────── */
 
+  // Validates the form, then POSTs a new category or PUTs an update, and navigates back to the list on success.
   const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }

@@ -2,6 +2,7 @@ interface FooterProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Renders the site-wide footer with quick links, resource links, and emergency contact information.
 export function Footer({ onNavigate }: FooterProps) {
   return (
     <footer className="bg-white border-t border-border mt-12">

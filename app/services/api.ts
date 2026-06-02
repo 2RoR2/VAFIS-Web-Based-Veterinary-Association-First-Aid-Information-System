@@ -1,9 +1,11 @@
 const DEFAULT_API_BASE_URL = 'http://localhost:4000/api';
 
+// Strips any trailing slash from a base URL string for consistent path concatenation.
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/$/, '');
 
 export const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL);
 
+// Prepends the API base URL to a relative path, ensuring exactly one slash between them.
 const buildUrl = (path: string) => `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 
 // ── Session-expired callback ───────────────────────────────────────────────────
@@ -76,6 +78,8 @@ const fetchWithRefresh = async (
 
 // ── Public API helpers ────────────────────────────────────────────────────────
 
+// Sends a GET request to the given path and returns the parsed JSON response.
+// Automatically retries once after refreshing the access token on a 401 response.
 export const apiGet = async <T>(path: string, signal?: AbortSignal): Promise<T> => {
   const response = await fetchWithRefresh(path, { signal, credentials: 'include' });
 
@@ -87,6 +91,7 @@ export const apiGet = async <T>(path: string, signal?: AbortSignal): Promise<T> 
   return response.json() as Promise<T>;
 };
 
+// Sends a POST request with a JSON body and returns the parsed response.
 export const apiPost = async <T>(path: string, body: unknown): Promise<T> => {
   const init: RequestInit = {
     method: 'POST',
@@ -105,6 +110,7 @@ export const apiPost = async <T>(path: string, body: unknown): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
+// Sends a PUT request with a JSON body and returns the parsed response.
 export const apiPut = async <T>(path: string, body: unknown): Promise<T> => {
   const init: RequestInit = {
     method: 'PUT',
@@ -123,6 +129,7 @@ export const apiPut = async <T>(path: string, body: unknown): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
+// Sends a DELETE request and returns the parsed JSON response.
 export const apiDelete = async <T>(path: string): Promise<T> => {
   const response = await fetchWithRefresh(path, {
     method: 'DELETE',
@@ -155,15 +162,19 @@ export interface MfaRequiredResponse {
   tempToken: string;
 }
 
+// Logs in with email and password. Returns either a full auth response or an MFA-required response with a temp token.
 export const authLogin = (email: string, password: string) =>
   apiPost<AuthResponse | MfaRequiredResponse>('/auth/login', { email, password });
 
+// Completes MFA login by submitting the temp token and the OTP entered by the user.
 export const authMfaVerify = (tempToken: string, otp: string) =>
   apiPost<AuthResponse>('/auth/mfa/verify', { tempToken, otp });
 
+// Registers a new user account and returns the session user on success.
 export const authSignup = (fullName: string, email: string, password: string) =>
   apiPost<AuthResponse>('/auth/signup', { fullName, email, password });
 
+// Returns the currently authenticated user from the server, or null if not logged in.
 export const authMe = async (): Promise<SessionUser | null> => {
   try {
     const data = await apiGet<AuthResponse>('/auth/me');
@@ -173,6 +184,7 @@ export const authMe = async (): Promise<SessionUser | null> => {
   }
 };
 
+// Explicitly calls the refresh endpoint and returns the updated session user, or null on failure.
 export const authRefresh = async (): Promise<SessionUser | null> => {
   try {
     const data = await apiPost<AuthResponse>('/auth/refresh', {});
@@ -182,4 +194,5 @@ export const authRefresh = async (): Promise<SessionUser | null> => {
   }
 };
 
+// Calls the logout endpoint to clear the server-side session cookies.
 export const authLogout = () => apiPost<{ message: string }>('/auth/logout', {});

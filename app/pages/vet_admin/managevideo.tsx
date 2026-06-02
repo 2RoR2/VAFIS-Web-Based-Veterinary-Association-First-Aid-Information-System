@@ -14,6 +14,7 @@ const DIFFICULTY_CLASSES: Record<string, string> = {
   Advanced: 'bg-destructive/15 text-destructive',
 };
 
+// Video management list page with species and guide filters, add/edit/delete actions, and a deletion confirmation modal.
 export function ManageVideoListPage({ onNavigate }: ManageVideoListPageProps) {
   const [videos, setVideos] = useState<Video[]>([]);
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -36,17 +37,20 @@ export function ManageVideoListPage({ onNavigate }: ManageVideoListPageProps) {
     return () => controller.abort();
   }, []);
 
+  // Filters the video list by the selected species and linked guide values.
   const filtered = videos.filter((v) => {
     const matchSpecies = speciesFilter === 'all' || v.species === speciesFilter;
     const matchGuide = guideFilter === 'all' || (guideFilter === 'none' ? !v.relatedGuideId : v.relatedGuideId === guideFilter);
     return matchSpecies && matchGuide;
   });
 
+  // Looks up the title of the guide linked to a video by guide ID, or returns null if not linked.
   const getLinkedGuideTitle = (guideId: string | null | undefined) => {
     if (!guideId) return null;
     return guides.find((g) => g.id === guideId)?.title ?? guideId;
   };
 
+  // DELETEs the targeted video via the API and removes it from the local list on success.
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);

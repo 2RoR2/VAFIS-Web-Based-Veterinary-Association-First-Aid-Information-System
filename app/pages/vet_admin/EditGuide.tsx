@@ -27,6 +27,7 @@ interface GuideForm {
   warnings: string[];
 }
 
+// Guide editing form that loads existing guide data and allows updating all fields, then saves as draft or submits for review.
 export function EditGuidePage({ onNavigate, guideId }: EditGuidePageProps) {
   const [guide, setGuide] = useState<Guide | null>(null);
   const [form, setForm] = useState<GuideForm | null>(null);
@@ -61,9 +62,11 @@ export function EditGuidePage({ onNavigate, guideId }: EditGuidePageProps) {
       .finally(() => setLoading(false));
   }, [guideId]);
 
+  // Updates a single top-level field in the guide form state by key.
   const updateField = <K extends keyof GuideForm>(key: K, value: GuideForm[K]) =>
     setForm((prev) => prev ? { ...prev, [key]: value } : prev);
 
+  // Toggles a species in the selected species list.
   const toggleSpecies = (s: string) =>
     setForm((prev) => {
       if (!prev) return prev;
@@ -73,6 +76,7 @@ export function EditGuidePage({ onNavigate, guideId }: EditGuidePageProps) {
       };
     });
 
+  // Updates the title or description of a step at the given index.
   const updateStep = (index: number, field: 'title' | 'description', value: string) =>
     setForm((prev) => {
       if (!prev) return prev;
@@ -81,15 +85,18 @@ export function EditGuidePage({ onNavigate, guideId }: EditGuidePageProps) {
       return { ...prev, steps };
     });
 
+  // Appends a new empty step with an auto-incremented step number.
   const addStep = () =>
     setForm((prev) => prev ? { ...prev, steps: [...prev.steps, { number: prev.steps.length + 1, title: '', description: '' }] } : prev);
 
+  // Removes the step at the given index and renumbers the remaining steps sequentially.
   const removeStep = (index: number) =>
     setForm((prev) => prev ? {
       ...prev,
       steps: prev.steps.filter((_, i) => i !== index).map((s, i) => ({ ...s, number: i + 1 })),
     } : prev);
 
+  // Updates the warning text at the given index.
   const updateWarning = (index: number, value: string) =>
     setForm((prev) => {
       if (!prev) return prev;
@@ -98,12 +105,15 @@ export function EditGuidePage({ onNavigate, guideId }: EditGuidePageProps) {
       return { ...prev, warnings };
     });
 
+  // Appends a new empty warning entry to the list.
   const addWarning = () => setForm((prev) => prev ? { ...prev, warnings: [...prev.warnings, ''] } : prev);
+  // Removes the warning at the given index.
   const removeWarning = (index: number) =>
     setForm((prev) => prev ? { ...prev, warnings: prev.warnings.filter((_, i) => i !== index) } : prev);
 
   const isValid = form ? form.title.trim() !== '' && form.species.length > 0 && form.category !== '' && form.readTime.trim() !== '' : false;
 
+  // PUTs the updated guide and optionally calls the submit endpoint to advance its status, then navigates to guide detail.
   const save = async (submitForReview: boolean) => {
     if (!form || !guideId) return;
     if (!isValid) { setError('Please fill in all required fields.'); return; }

@@ -38,11 +38,13 @@ const roles = [
   },
 ];
 
+// Renders the login or signup form depending on the mode prop, handles form submission, and navigates to MFA screen if required.
 export function AuthPage({ mode, onNavigate, onAuthSuccess }: AuthPageProps) {
   const isSignup = mode === 'signup';
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Validates form fields, calls the appropriate auth API, and either navigates to MFA or calls onAuthSuccess.
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);

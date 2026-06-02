@@ -6,6 +6,7 @@ interface SpeciesCardProps {
   onClick: () => void;
 }
 
+// Displays a species selection card with an image or emoji icon and the number of available guides.
 export function SpeciesCard({ name, icon, imageSrc, count, onClick }: SpeciesCardProps) {
   return (
     <button

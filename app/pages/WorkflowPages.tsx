@@ -39,6 +39,7 @@ interface WorkflowPageProps {
 const speciesOptions = ['Dogs', 'Cats', 'Rabbits', 'Hamsters', 'Guinea Pigs', 'Birds'];
 
 
+// Pet owner landing page showing a quick emergency search, the primary pet profile, species-filtered guides, and quiz history.
 export function PetOwnerDashboard({ onNavigate }: WorkflowPageProps) {
   const { data: guides, loading, error } = useApiData<Guide[]>('/guides', []);
   const { data: quizResults } = useApiData<QuizResultItem[]>('/quizzes/my-results', []);
@@ -140,6 +141,7 @@ export function PetOwnerDashboard({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Displays the pet profile management page where users can add, edit, and delete saved pet records.
 export function PetProfilePage({ onNavigate }: WorkflowPageProps) {
   const [pets, setPets] = useState<PetProfile[]>([]);
   const [loadingPets, setLoadingPets] = useState(true);
@@ -155,6 +157,7 @@ export function PetProfilePage({ onNavigate }: WorkflowPageProps) {
       .finally(() => setLoadingPets(false));
   }, []);
 
+  // Creates a new pet or updates an existing one via the API, then refreshes the pet list and clears the form.
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const fd = new FormData(event.currentTarget);
@@ -180,6 +183,7 @@ export function PetProfilePage({ onNavigate }: WorkflowPageProps) {
     }
   };
 
+  // Deletes the pet with the given ID via the API and removes it from the local list.
   const handleDelete = async (petId: string) => {
     setError('');
     try {
@@ -259,6 +263,7 @@ export function PetProfilePage({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Displays guides, videos, and quizzes filtered to a specific animal species.
 export function SpeciesPage({ onNavigate, species = 'Dogs' }: WorkflowPageProps & { species?: string }) {
   const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
   const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);
@@ -319,6 +324,7 @@ export function SpeciesPage({ onNavigate, species = 'Dogs' }: WorkflowPageProps 
   );
 }
 
+// Guide authoring page where admins can create, edit, save as draft, submit for review, publish, or unpublish guides.
 export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -330,8 +336,10 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const { data: guides, loading, error } = useApiData<Guide[]>(`/guides/admin?t=${refreshKey}`, []);
 
+  // Increments the refresh key to force useApiData to re-fetch the guide list.
   const refresh = () => setRefreshKey((k) => k + 1);
 
+  // Reads form field values from the DOM and returns them as a plain object, or null if the form ref is not mounted.
   const readForm = () => {
     const f = formRef.current;
     if (!f) return null;
@@ -344,6 +352,7 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
     };
   };
 
+  // Converts parsed form values into the guide API payload shape expected by the backend.
   const buildPayload = (parsed: NonNullable<ReturnType<typeof readForm>>) => ({
     title: parsed.title,
     species: [parsed.species],
@@ -357,6 +366,7 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
     relatedGuides: selectedGuide?.relatedGuides ?? [],
   });
 
+  // Saves the current form as a draft via POST (new) or PUT (existing) without changing the guide's workflow status.
   const handleSaveDraft = async () => {
     const parsed = readForm();
     if (!parsed?.title) { setActionError('Guide title is required.'); return; }
@@ -373,6 +383,7 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
     } finally { setSaving(false); }
   };
 
+  // Saves the guide if not yet persisted, then calls the submit endpoint to advance its status to pending_review.
   const handleSubmitForReview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setActionError(''); setActionSuccess('');
@@ -405,6 +416,7 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
     } finally { setSubmitting(false); }
   };
 
+  // Publishes the selected guide so it becomes visible to pet owners.
   const handlePublish = async () => {
     if (!selectedGuide) return;
     setPublishing(true); setActionError(''); setActionSuccess('');
@@ -418,6 +430,7 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
     } finally { setPublishing(false); }
   };
 
+  // Unpublishes the selected guide, hiding it from pet owners.
   const handleUnpublish = async () => {
     if (!selectedGuide) return;
     setPublishing(true); setActionError(''); setActionSuccess('');
@@ -431,6 +444,7 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
     } finally { setPublishing(false); }
   };
 
+  // Selects a guide from the list to load it into the editor and clears any existing status messages.
   const selectGuide = (guide: Guide) => { setSelectedGuide(guide); setActionError(''); setActionSuccess(''); };
 
   return (
@@ -494,6 +508,7 @@ export function ManageGuidePage({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Stub quiz management page for creating quiz questions, setting the correct answer, and publishing.
 export function ManageQuizPage({ onNavigate }: WorkflowPageProps) {
   const [published, setPublished] = useState(false);
 
@@ -523,6 +538,7 @@ export function ManageQuizPage({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Clinic management page showing a form to add/edit clinic details alongside a live preview of existing clinic cards.
 export function ManageClinicPage({ onNavigate }: WorkflowPageProps) {
   const { data: clinics, loading, error } = useApiData<Clinic[]>('/clinics', []);
 
@@ -554,6 +570,7 @@ export function ManageClinicPage({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Veterinary professional dashboard showing pending review counts and a list of guides awaiting clinical approval.
 export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
   const { data: guides, loading, error } = useApiData<Guide[]>('/guides/admin', []);
   const pending = guides.filter((g) => g.status === 'pending_review');
@@ -604,6 +621,7 @@ export function ProfessionalDashboard({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Guide review page for veterinary professionals to read guide content, leave comments, and approve or request changes.
 export function ReviewGuidePage({ onNavigate, guideId = '' }: WorkflowPageProps & { guideId?: string }) {
   const [comments, setComments] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -611,6 +629,7 @@ export function ReviewGuidePage({ onNavigate, guideId = '' }: WorkflowPageProps 
   const [decision, setDecision] = useState<string | null>(null);
   const { data: guide, loading, error } = useApiData<Guide | null>(`/guides/${guideId}`, null);
 
+  // Posts the review decision (approve or request_changes) with optional comments to the guide review endpoint.
   const submitReview = async (action: 'approve' | 'request_changes') => {
     if (action === 'request_changes' && !comments.trim()) {
       setActionError('Comments are required when requesting changes.');
@@ -686,6 +705,7 @@ export function ReviewGuidePage({ onNavigate, guideId = '' }: WorkflowPageProps 
   );
 }
 
+// Displays the notifications list page with all workflow alerts, revision messages, and approval status events.
 export function NotificationsPage({ onNavigate }: WorkflowPageProps) {
   const { data: notifications, loading, error } = useApiData<NotificationItem[]>('/workflow/notifications', []);
 
@@ -715,6 +735,7 @@ export function NotificationsPage({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Displays the audit log page listing content lifecycle actions such as guide submissions, reviews, and approvals.
 export function AuditLogPage({ onNavigate }: WorkflowPageProps) {
   const { data: auditLogs, loading, error } = useApiData<AuditLogItem[]>('/workflow/audit-logs', []);
 
@@ -739,6 +760,7 @@ export function AuditLogPage({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Confirmation dialog page that prompts the user to confirm or cancel logging out.
 export function LogoutPage({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="min-h-screen bg-background py-16">
@@ -757,6 +779,7 @@ export function LogoutPage({ onConfirm, onCancel }: { onConfirm: () => void; onC
   );
 }
 
+// Admin workflow hub showing quick-access tool cards for guides, quizzes, clinics, notifications, audit log, and review queue, plus summary metrics.
 export function AdminWorkflowDashboard({ onNavigate }: WorkflowPageProps) {
   const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides/admin', []);
   const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);
@@ -808,6 +831,7 @@ export function AdminWorkflowDashboard({ onNavigate }: WorkflowPageProps) {
   );
 }
 
+// Shared page shell for management screens, providing a consistent header with a title, description, and back-to-admin button.
 function ManagementShell({ title, description, onNavigate, children }: WorkflowPageProps & { title: string; description: string; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background py-8">
@@ -825,6 +849,7 @@ function ManagementShell({ title, description, onNavigate, children }: WorkflowP
   );
 }
 
+// Generic list page layout with an icon, title, description, scrollable content slot, and a back-to-dashboard button.
 function SimpleListPage({ title, description, onNavigate, icon: Icon, children }: WorkflowPageProps & { title: string; description: string; icon: typeof Bell; children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background py-8">
@@ -843,6 +868,7 @@ function SimpleListPage({ title, description, onNavigate, icon: Icon, children }
   );
 }
 
+// Renders a single stat card with an icon, numeric value, and label for use in dashboard metric grids.
 function Metric({ icon: Icon, label, value }: { icon: typeof FileText; label: string; value: number }) {
   return (
     <div className="bg-white rounded-lg border border-border p-5 flex items-center gap-4">

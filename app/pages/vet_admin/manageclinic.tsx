@@ -7,6 +7,7 @@ interface ManageClinicListPageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Clinic management list page with a species filter, add/edit/delete actions, and a confirmation modal for deletion.
 export function ManageClinicListPage({ onNavigate }: ManageClinicListPageProps) {
   const [clinics, setClinics]           = useState<Clinic[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -24,22 +25,19 @@ export function ManageClinicListPage({ onNavigate }: ManageClinicListPageProps) 
     return () => controller.abort();
   }, []);
 
-  /* ── Derived species filter options ────────────────────────────────────── */
-
+  // Derives a sorted list of unique species values across all clinics for the filter dropdown.
   const speciesOptions = useMemo(() => {
     const all = clinics.flatMap((c) => c.species);
     return Array.from(new Set(all)).sort();
   }, [clinics]);
 
-  /* ── Filtered list ─────────────────────────────────────────────────────── */
-
+  // Filters the clinic list to only clinics that treat the selected species.
   const filtered = useMemo(() => {
     if (!speciesFilter) return clinics;
     return clinics.filter((c) => c.species.includes(speciesFilter));
   }, [clinics, speciesFilter]);
 
-  /* ── Delete ────────────────────────────────────────────────────────────── */
-
+  // DELETEs the targeted clinic via the API and removes it from the local list on success.
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);

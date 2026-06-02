@@ -4,6 +4,7 @@ interface EmergencyBannerProps {
   onFindVet: () => void;
 }
 
+// Displays a prominent red banner reminding users that this is first-aid guidance only, with a button to find a nearby vet.
 export function EmergencyBanner({ onFindVet }: EmergencyBannerProps) {
   return (
     <div className="bg-destructive text-destructive-foreground rounded-lg p-4 flex items-start gap-3">

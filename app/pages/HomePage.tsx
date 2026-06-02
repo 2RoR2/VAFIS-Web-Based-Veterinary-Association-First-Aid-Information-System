@@ -20,6 +20,7 @@ interface HomePageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Renders the public landing page with featured guides, species selector, resource cards, and FAQ section.
 export function HomePage({ onNavigate }: HomePageProps) {
   const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
   const { data: videos, loading: videosLoading, error: videosError } = useApiData<VideoItem[]>('/videos', []);

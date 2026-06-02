@@ -22,12 +22,14 @@ const contentTypeMap: Record<string, FeedbackItem['contentType']> = {
   'Clinic Directory': 'Clinic Directory',
 };
 
+// Renders the feedback form with a star rating, content type selector, and comment field, or shows a login prompt/success state.
 export function FeedbackPage({ onNavigate, contentType = 'First-aid guide', contentTitle = '', currentUser }: FeedbackPageProps) {
   const [rating, setRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Validates the star rating, posts the feedback payload to the API, and shows a success state or error message.
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (rating === 0 || isSubmitting) {

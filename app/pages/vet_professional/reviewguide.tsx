@@ -32,6 +32,7 @@ const statusLabel: Record<string, string> = {
   archived: 'Archived',
 };
 
+// Full guide review page for veterinary professionals showing guide content, warnings, linked resources, and an approve/request-changes panel.
 export function VetReviewGuidePage({ onNavigate, guideId = '' }: ReviewGuidePageProps) {
   const [guide, setGuide] = useState<Guide | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +54,7 @@ export function VetReviewGuidePage({ onNavigate, guideId = '' }: ReviewGuidePage
     return () => controller.abort();
   }, [guideId]);
 
+  // Posts the review decision (approve or request_changes) and an optional comment to the guide review API endpoint.
   const submitReview = async (action: 'approve' | 'request_changes') => {
     if (action === 'request_changes' && !comments.trim()) {
       setSubmitError('Comments are required when requesting changes.');
@@ -70,6 +72,7 @@ export function VetReviewGuidePage({ onNavigate, guideId = '' }: ReviewGuidePage
     }
   };
 
+  // Formats an ISO date string to a human-readable date in Malaysian locale, or returns '—' for missing dates.
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });

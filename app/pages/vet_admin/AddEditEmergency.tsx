@@ -18,6 +18,7 @@ const emptyForm = {
   description: '',
 };
 
+// Add/edit form for an emergency scenario with name, severity selector, species toggles, and description.
 export function AddEditEmergencyPage({ onNavigate, scenarioId }: AddEditEmergencyPageProps) {
   const isEdit = Boolean(scenarioId);
 
@@ -42,8 +43,7 @@ export function AddEditEmergencyPage({ onNavigate, scenarioId }: AddEditEmergenc
       .finally(() => setLoading(false));
   }, [scenarioId, isEdit]);
 
-  /* ── Field helpers ─────────────────────────────────────────────────────── */
-
+  // Toggles a species in the selected species list.
   const toggleSpecies = (sp: string) => {
     setForm((prev) => ({
       ...prev,
@@ -53,8 +53,7 @@ export function AddEditEmergencyPage({ onNavigate, scenarioId }: AddEditEmergenc
     }));
   };
 
-  /* ── Validation ────────────────────────────────────────────────────────── */
-
+  // Returns a map of field-level validation errors; an empty object means the form is valid.
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim())       e.name    = 'Name is required.';
@@ -62,8 +61,7 @@ export function AddEditEmergencyPage({ onNavigate, scenarioId }: AddEditEmergenc
     return e;
   };
 
-  /* ── Submit ────────────────────────────────────────────────────────────── */
-
+  // Validates the form, then POSTs a new scenario or PUTs an update, and navigates back to the scenario list on success.
   const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }

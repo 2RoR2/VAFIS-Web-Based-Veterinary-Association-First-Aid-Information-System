@@ -10,6 +10,7 @@ interface GuidePageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Fetches and displays a single first-aid guide by ID, including steps, warnings, related videos, and an inline feedback form.
 export function GuidePage({ guideId, onNavigate }: GuidePageProps) {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');
@@ -78,6 +79,7 @@ export function GuidePage({ guideId, onNavigate }: GuidePageProps) {
     high: 'Seek Vet Now',
   };
 
+  // Posts the selected star rating and comment as feedback for this guide, then briefly shows a success state.
   const handleSubmitFeedback = () => {
     if (rating === 0 || !guide || isSubmitting) return;
 

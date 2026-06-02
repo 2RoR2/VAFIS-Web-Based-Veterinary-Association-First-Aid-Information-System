@@ -28,6 +28,7 @@ const emptyForm = {
   lng:         '',
 };
 
+// Add/edit form for a vet clinic with fields for details, hours, emergency status, species, services, and GPS coordinates.
 export function AddEditClinicPage({ onNavigate, clinicId }: AddEditClinicPageProps) {
   const isEdit = Boolean(clinicId);
 
@@ -63,9 +64,11 @@ export function AddEditClinicPage({ onNavigate, clinicId }: AddEditClinicPagePro
 
   /* ── Field helpers ─────────────────────────────────────────────────────── */
 
+  // Updates a single field in the clinic form state by key.
   const setField = <K extends keyof typeof emptyForm>(key: K, value: (typeof emptyForm)[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  // Toggles a species in the selected species list.
   const toggleSpecies = (sp: string) =>
     setForm((prev) => ({
       ...prev,
@@ -74,6 +77,7 @@ export function AddEditClinicPage({ onNavigate, clinicId }: AddEditClinicPagePro
         : [...prev.species, sp],
     }));
 
+  // Adds the current service input text to the services list if it is non-empty and not a duplicate.
   const addService = () => {
     const trimmed = serviceInput.trim();
     if (!trimmed || form.services.includes(trimmed)) { setServiceInput(''); return; }
@@ -81,11 +85,13 @@ export function AddEditClinicPage({ onNavigate, clinicId }: AddEditClinicPagePro
     setServiceInput('');
   };
 
+  // Removes the given service item from the services list.
   const removeService = (item: string) =>
     setForm((prev) => ({ ...prev, services: prev.services.filter((s) => s !== item) }));
 
   /* ── Validation ────────────────────────────────────────────────────────── */
 
+  // Returns a map of field-level validation errors; an empty object means the form is valid.
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim())    e.name    = 'Clinic name is required.';
@@ -101,6 +107,7 @@ export function AddEditClinicPage({ onNavigate, clinicId }: AddEditClinicPagePro
 
   /* ── Submit ────────────────────────────────────────────────────────────── */
 
+  // Validates the form, then POSTs a new clinic or PUTs an update, and navigates back to the clinic list on success.
   const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
@@ -162,6 +169,7 @@ export function AddEditClinicPage({ onNavigate, clinicId }: AddEditClinicPagePro
 
   /* ── Reusable field ────────────────────────────────────────────────────── */
 
+  // Reusable labeled field wrapper that renders a label and optional error message around its children.
   const Field = ({
     label, required, error, children,
   }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) => (
@@ -174,6 +182,7 @@ export function AddEditClinicPage({ onNavigate, clinicId }: AddEditClinicPagePro
     </div>
   );
 
+  // Returns the input CSS class string, applying a destructive border when the field has an error.
   const inputClass = (hasError?: boolean) =>
     `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary ${
       hasError ? 'border-destructive' : 'border-border'

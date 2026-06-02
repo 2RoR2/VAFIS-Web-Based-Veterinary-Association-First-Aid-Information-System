@@ -15,11 +15,13 @@ const roleLabels: Record<AuthUser['role'], string> = {
   administrator: 'Administrator',
 };
 
+// Renders the public navigation header with links, an account dropdown for pet owners, and login/signup buttons for guests.
 export function Header({ onNavigate, currentPage, currentUser, onLogout }: HeaderProps) {
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Closes the account dropdown when the user clicks outside of it.
     function handleClickOutside(event: MouseEvent) {
       if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
         setAccountOpen(false);
@@ -42,6 +44,7 @@ export function Header({ onNavigate, currentPage, currentUser, onLogout }: Heade
   const homePages = ['home', 'admin-workflow', 'professional-dashboard', 'pet-dashboard'];
   const accountPages = ['pet-owner-profile', 'pet-profile'];
 
+  // Closes the account dropdown then navigates to the given page.
   const navigate = (page: string) => {
     setAccountOpen(false);
     onNavigate(page);

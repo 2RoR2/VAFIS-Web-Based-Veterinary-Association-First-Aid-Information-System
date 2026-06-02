@@ -9,6 +9,7 @@ interface VideoCardProps {
   onClick: () => void;
 }
 
+// Displays a video thumbnail card with species tag, title, and duration.
 export function VideoCard({ title, duration, species, thumbnail, imageSrc, onClick }: VideoCardProps) {
   return (
     <button

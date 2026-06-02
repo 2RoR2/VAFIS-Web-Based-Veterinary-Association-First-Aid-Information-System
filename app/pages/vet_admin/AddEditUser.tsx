@@ -8,13 +8,13 @@ interface AddEditUserPageProps {
   vetId?: string;            // present → manage/detail mode; absent → add mode
 }
 
-/* ── Add mode ─────────────────────────────────────────────────────────────── */
-
+// Registration form for creating a new veterinary professional account with name, email, and initial password.
 function AddVetForm({ onNavigate }: { onNavigate: AddEditUserPageProps['onNavigate'] }) {
   const [form, setForm]   = useState({ fullName: '', email: '', password: '' });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Returns a map of field-level validation errors; an empty object means the form is valid.
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.fullName.trim()) e.fullName = 'Full name is required.';
@@ -24,6 +24,7 @@ function AddVetForm({ onNavigate }: { onNavigate: AddEditUserPageProps['onNaviga
     return e;
   };
 
+  // Validates the form and POSTs the new vet account to the API, then navigates back to the account list on success.
   const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
@@ -43,6 +44,7 @@ function AddVetForm({ onNavigate }: { onNavigate: AddEditUserPageProps['onNaviga
     }
   };
 
+  // Returns the input CSS class string, applying a destructive border when the field has an error.
   const inputClass = (hasError?: boolean) =>
     `w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary ${
       hasError ? 'border-destructive' : 'border-border'
@@ -131,8 +133,7 @@ function AddVetForm({ onNavigate }: { onNavigate: AddEditUserPageProps['onNaviga
   );
 }
 
-/* ── Manage / detail mode ─────────────────────────────────────────────────── */
-
+// Read-only detail view for an existing vet professional account, with a suspend/reactivate action and confirmation modal.
 function ManageVetDetail({ vetId, onNavigate }: { vetId: string; onNavigate: AddEditUserPageProps['onNavigate'] }) {
   const [vet, setVet]           = useState<VetAccount | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -147,6 +148,7 @@ function ManageVetDetail({ vetId, onNavigate }: { vetId: string; onNavigate: Add
       .finally(() => setLoading(false));
   }, [vetId]);
 
+  // PUTs to the suspend endpoint to toggle the vet account between suspended and active, then updates local state.
   const handleToggleSuspend = async () => {
     if (!vet) return;
     setToggling(true);
@@ -161,6 +163,7 @@ function ManageVetDetail({ vetId, onNavigate }: { vetId: string; onNavigate: Add
     }
   };
 
+  // Formats an ISO date string to a human-readable date in Malaysian locale, or returns '—' for missing dates.
   const formatDate = (iso: string) => {
     if (!iso) return '—';
     try { return new Date(iso).toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' }); }
@@ -332,8 +335,7 @@ function ManageVetDetail({ vetId, onNavigate }: { vetId: string; onNavigate: Add
   );
 }
 
-/* ── Main export — routes to the right sub-component ─────────────────────── */
-
+// Routes to ManageVetDetail when a vetId is provided, or AddVetForm for creating a new vet account.
 export function AddEditUserPage({ onNavigate, vetId }: AddEditUserPageProps) {
   if (vetId) {
     return <ManageVetDetail vetId={vetId} onNavigate={onNavigate} />;

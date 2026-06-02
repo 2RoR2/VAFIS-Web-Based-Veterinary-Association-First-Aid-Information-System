@@ -124,6 +124,7 @@ type PageType =
   | 'pet-owner-profile'
   | 'pet-quiz-history';
 
+// Root application component. Manages the current page, authenticated user, and page-level navigation state.
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [pageData, setPageData] = useState<any>(null);
@@ -139,6 +140,7 @@ export default function App() {
       window.scrollTo(0, 0);
     });
 
+    // Attempts to restore an existing session on page load by checking the access token then falling back to refresh.
     const restoreSession = async () => {
       let user = await authMe();
 
@@ -154,6 +156,7 @@ export default function App() {
     restoreSession();
   }, []);
 
+  // Navigates to a page by name, redirecting unauthenticated users to login for staff-only pages.
   const handleNavigate = (page: string, data?: any) => {
     const staffPages = [
       'admin',
@@ -213,8 +216,10 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  // Updates the current user state when the profile is changed in a child page.
   const handleUserUpdate = (user: AuthUser) => setCurrentUser(user);
 
+  // Calls the logout API, clears the user state, and redirects to the home page.
   const handleLogout = () => {
     authLogout().catch(() => {});
     setCurrentUser(null);
@@ -223,6 +228,7 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
+  // Called after a successful login or signup. Sets the user state and redirects to the appropriate dashboard.
   const handleAuthSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     const requestedPage = pageData?.requestedPage;

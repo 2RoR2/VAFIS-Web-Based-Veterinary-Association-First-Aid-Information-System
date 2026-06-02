@@ -17,8 +17,7 @@ interface StoreQuizPageProps {
   currentUser: AuthUser | null;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
+// Formats an ISO/raw date string to a human-readable date-time in Malaysian locale, or returns '—' for empty input.
 const formatDate = (raw: string) => {
   if (!raw) return '—';
   try {
@@ -34,6 +33,7 @@ const formatDate = (raw: string) => {
   }
 };
 
+// Inline badge showing pass/fail status and percentage for a quiz result.
 const ScoreBadge = ({ percentage, passed }: { percentage: number; passed: boolean }) => (
   <span
     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -47,8 +47,7 @@ const ScoreBadge = ({ percentage, passed }: { percentage: number; passed: boolea
   </span>
 );
 
-// ── Per-question breakdown ─────────────────────────────────────────────────────
-
+// Renders a per-question breakdown for a completed quiz, showing correct/incorrect status, the user's answer, and an explanation.
 function QuestionReview({
   questions,
   userAnswers,
@@ -110,8 +109,7 @@ function QuestionReview({
   );
 }
 
-// ── Result card ────────────────────────────────────────────────────────────────
-
+// Collapsible card displaying a single quiz result with score badge, attempt date, and an expandable per-question review.
 function ResultCard({
   result,
   onRetake,
@@ -197,10 +195,7 @@ function ResultCard({
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
-
-type FilterType = 'all' | 'passed' | 'failed';
-
+// Quiz history page showing the user's past attempts with summary stats, pass/fail filter tabs, and expandable result cards.
 export function StoreQuizPage({ onNavigate, currentUser }: StoreQuizPageProps) {
   const [results, setResults]     = useState<QuizResultItem[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -235,6 +230,7 @@ export function StoreQuizPage({ onNavigate, currentUser }: StoreQuizPageProps) {
   const passRate  = total > 0 ? Math.round((passCount / total) * 100) : 0;
   const bestScore = total > 0 ? Math.max(...results.map((r) => r.percentage)) : null;
 
+  // Navigates to the quiz list page so the user can find and retake the quiz.
   const handleRetake = (quizId: string) => {
     onNavigate('quiz');
     // QuizPage opens with the full list; user can find and retake from there.

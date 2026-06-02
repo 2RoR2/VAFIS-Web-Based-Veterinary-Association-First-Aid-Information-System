@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { apiGet } from '../services/api';
 
+// Generic hook that fetches data from the given API path and returns { data, loading, error }.
+// Aborts the in-flight request on unmount or when the path changes to prevent stale updates.
 export const useApiData = <T>(path: string, initialData: T) => {
   const [data, setData] = useState<T>(initialData);
   const [loading, setLoading] = useState(true);

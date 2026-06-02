@@ -8,6 +8,7 @@ interface AdminPageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
+// Admin content dashboard showing guide/video/quiz counts, notifications, audit log, feedback, and a tabbed content manager.
 export function AdminPage({ onNavigate }: AdminPageProps) {
   const [activeTab, setActiveTab] = useState<'guides' | 'videos' | 'quizzes'>('guides');
   const { data: guides, loading: guidesLoading, error: guidesError } = useApiData<Guide[]>('/guides', []);
@@ -45,6 +46,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     status: 'published' as const,
   }));
 
+  // Returns the Tailwind badge class string for a given content status string.
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'published':

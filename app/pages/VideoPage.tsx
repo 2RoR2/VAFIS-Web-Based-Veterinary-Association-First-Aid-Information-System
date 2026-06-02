@@ -11,7 +11,7 @@ interface VideoPageProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
-// ── Video Player Page ────────────────────────────────────────────────────────
+// Fetches and displays a single video by ID with an embedded player, metadata, linked guide, and find-a-vet prompt.
 
 interface VideoPlayerPageProps {
   videoId: string;
@@ -152,8 +152,7 @@ export function VideoPlayerPage({ videoId, onNavigate }: VideoPlayerPageProps) {
   );
 }
 
-// ── Video List Page ──────────────────────────────────────────────────────────
-
+// Renders the video library with keyword search, species/category filters, and sort controls.
 export function VideoPage({ onNavigate }: VideoPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecies, setSelectedSpecies] = useState('all');

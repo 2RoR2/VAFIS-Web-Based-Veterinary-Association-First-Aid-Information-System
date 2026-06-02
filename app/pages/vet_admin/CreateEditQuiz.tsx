@@ -27,6 +27,7 @@ const emptyForm: QuizForm = {
   description: '',
 };
 
+// Create/edit form for a quiz, covering title, species, category, difficulty, pass mark, and description.
 export function CreateEditQuizPage({ onNavigate, quizId }: CreateEditQuizPageProps) {
   const isEdit = Boolean(quizId);
 
@@ -53,6 +54,7 @@ export function CreateEditQuizPage({ onNavigate, quizId }: CreateEditQuizPagePro
       .finally(() => setLoading(false));
   }, [isEdit, quizId]);
 
+  // Updates a single field in the quiz form state by key.
   const update = <K extends keyof QuizForm>(key: K, value: QuizForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -63,6 +65,7 @@ export function CreateEditQuizPage({ onNavigate, quizId }: CreateEditQuizPagePro
     form.passingScore >= 1 &&
     form.passingScore <= 100;
 
+  // Validates required fields and POSTs a new quiz or PUTs an update, then navigates back to the quiz list on success.
   const handleSave = async () => {
     if (!isValid) { setSaveError('Please fill in all required fields.'); return; }
     setSaving(true);

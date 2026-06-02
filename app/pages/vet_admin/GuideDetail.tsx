@@ -9,6 +9,7 @@ interface GuideDetailPageProps {
   guideId?: string;
 }
 
+// Admin guide detail page showing full guide content, workflow status, review comments, and action buttons to submit, approve, or archive.
 export function GuideDetailPage({ onNavigate, guideId }: GuideDetailPageProps) {
   const [guide, setGuide] = useState<Guide | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export function GuideDetailPage({ onNavigate, guideId }: GuideDetailPageProps) {
     return () => controller.abort();
   }, [guideId]);
 
+  // Executes an async API action, updates local guide state on success, or surfaces an error message.
   const handleAction = async (action: () => Promise<Guide>) => {
     setActing(true);
     setActionError('');
@@ -39,6 +41,7 @@ export function GuideDetailPage({ onNavigate, guideId }: GuideDetailPageProps) {
     }
   };
 
+  // Formats an ISO date string to a short human-readable date in Malaysian locale, or returns '—' for missing dates.
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });

@@ -32,6 +32,7 @@ const emptyForm: GuideForm = {
   severity: 'medium', category: '', relatedVideoId: '', warnings: [''],
 };
 
+// Guide creation form with fields for basic info, species toggles, step-by-step instructions, warnings, and an optional linked video.
 export function CreateGuidePage({ onNavigate }: CreateGuidePageProps) {
   const [form, setForm] = useState<GuideForm>(emptyForm);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -42,15 +43,18 @@ export function CreateGuidePage({ onNavigate }: CreateGuidePageProps) {
     apiGet<Video[]>('/videos').then(setVideos).catch(() => {});
   }, []);
 
+  // Updates a single top-level field in the guide form state by key.
   const updateField = <K extends keyof GuideForm>(key: K, value: GuideForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  // Toggles a species in the selected species list.
   const toggleSpecies = (s: string) =>
     setForm((prev) => ({
       ...prev,
       species: prev.species.includes(s) ? prev.species.filter((x) => x !== s) : [...prev.species, s],
     }));
 
+  // Updates the title or description of a step at the given index.
   const updateStep = (index: number, field: 'title' | 'description', value: string) =>
     setForm((prev) => {
       const steps = [...prev.steps];
@@ -58,18 +62,21 @@ export function CreateGuidePage({ onNavigate }: CreateGuidePageProps) {
       return { ...prev, steps };
     });
 
+  // Appends a new empty step with an auto-incremented step number.
   const addStep = () =>
     setForm((prev) => ({
       ...prev,
       steps: [...prev.steps, { number: prev.steps.length + 1, title: '', description: '' }],
     }));
 
+  // Removes the step at the given index and renumbers the remaining steps sequentially.
   const removeStep = (index: number) =>
     setForm((prev) => ({
       ...prev,
       steps: prev.steps.filter((_, i) => i !== index).map((s, i) => ({ ...s, number: i + 1 })),
     }));
 
+  // Updates the warning text at the given index.
   const updateWarning = (index: number, value: string) =>
     setForm((prev) => {
       const warnings = [...prev.warnings];
@@ -77,12 +84,15 @@ export function CreateGuidePage({ onNavigate }: CreateGuidePageProps) {
       return { ...prev, warnings };
     });
 
+  // Appends a new empty warning entry to the list.
   const addWarning = () => setForm((prev) => ({ ...prev, warnings: [...prev.warnings, ''] }));
+  // Removes the warning at the given index.
   const removeWarning = (index: number) =>
     setForm((prev) => ({ ...prev, warnings: prev.warnings.filter((_, i) => i !== index) }));
 
   const isValid = form.title.trim() !== '' && form.species.length > 0 && form.category !== '' && form.readTime.trim() !== '';
 
+  // POSTs the guide as a draft; if submitForReview is true, also calls the submit endpoint to advance it to pending_review.
   const save = async (submitForReview: boolean) => {
     if (!isValid) { setError('Please fill in all required fields.'); return; }
     setSaving(true);

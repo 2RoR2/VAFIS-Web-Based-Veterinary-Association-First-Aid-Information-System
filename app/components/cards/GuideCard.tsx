@@ -8,6 +8,7 @@ interface GuideCardProps {
   onClick: () => void;
 }
 
+// Displays a first-aid guide card with severity badge, read time, and a click handler to open the full guide.
 export function GuideCard({ title, severity, readTime, description, onClick }: GuideCardProps) {
   const severityColors = {
     low: 'bg-success text-success-foreground',

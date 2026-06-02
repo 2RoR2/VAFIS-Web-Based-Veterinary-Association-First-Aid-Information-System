@@ -26,6 +26,8 @@ const KUCHING_AREAS = [
   { label: 'Kota Samarahan',       lat: 1.4599, lng: 110.4983 },
 ];
 
+// Builds the clinic API endpoint URL based on search term, filter type, and user coordinates.
+// Uses the /clinics/nearby endpoint when coordinates are available, otherwise /clinics.
 const buildClinicUrl = (
   debouncedSearch: string,
   filterType: FilterType,
@@ -46,6 +48,7 @@ const buildClinicUrl = (
   return qs ? `/clinics?${qs}` : '/clinics';
 };
 
+// Renders the clinic finder page with GPS-based or manual area proximity sorting, text search, and filter controls.
 export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -74,6 +77,7 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
       });
   }, []);
 
+  // Sets the user's coordinates from the selected Kuching area and switches to manual location mode.
   const handleManualAreaSubmit = () => {
     const area = KUCHING_AREAS.find((a) => a.label === selectedArea);
     if (!area) return;
@@ -81,6 +85,7 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
     setLocationStatus('manual');
   };
 
+  // Clears the user's coordinates and resets the location status to denied so they can re-enter.
   const handleClearLocation = () => {
     setUserCoords(null);
     setLocationStatus('denied');
@@ -98,6 +103,7 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
   const loadError = clinicsError || contactsError;
   const isLoading = clinicsLoading || contactsLoading;
 
+  // Returns a Google Maps directions URL using GPS coordinates if available, otherwise falls back to a name+address search URL.
   const getDirectionsUrl = (clinic: Clinic) => {
     if (typeof clinic.lat === 'number' && typeof clinic.lng === 'number') {
       return `https://www.google.com/maps/dir/?api=1&destination=${clinic.lat},${clinic.lng}`;
@@ -105,6 +111,7 @@ export function ClinicsPage({ onNavigate }: ClinicsPageProps) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clinic.name}, ${clinic.address}, ${clinic.city}`)}`;
   };
 
+  // Returns a human-readable distance string for a clinic if the user's coordinates are known.
   const getDistanceLabel = (clinic: Clinic): string | undefined => {
     if (!userCoords) return undefined;
     if (typeof clinic.distanceKm === 'number') return `${clinic.distanceKm} km away`;

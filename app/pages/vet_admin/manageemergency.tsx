@@ -13,6 +13,7 @@ const SEVERITY_LABELS: Record<string, string> = {
   high:   'High',
 };
 
+// Returns the Tailwind badge class string for a given severity level string.
 const getSeverityClasses = (severity: string) => {
   switch (severity) {
     case 'high':   return 'bg-destructive/10 text-destructive';
@@ -22,6 +23,7 @@ const getSeverityClasses = (severity: string) => {
   }
 };
 
+// Emergency scenario management list page with species and severity filters, add/edit/delete actions, and a deletion confirmation modal.
 export function ManageEmergencyListPage({ onNavigate }: ManageEmergencyListPageProps) {
   const [scenarios, setScenarios]           = useState<EmergencyScenario[]>([]);
   const [loading, setLoading]               = useState(true);
@@ -40,15 +42,13 @@ export function ManageEmergencyListPage({ onNavigate }: ManageEmergencyListPageP
     return () => controller.abort();
   }, []);
 
-  /* ── Derived species filter options ────────────────────────────────────── */
-
+  // Derives a sorted list of unique species values across all scenarios for the filter dropdown.
   const speciesOptions = useMemo(() => {
     const all = scenarios.flatMap((s) => s.species);
     return Array.from(new Set(all)).sort();
   }, [scenarios]);
 
-  /* ── Filtered list ─────────────────────────────────────────────────────── */
-
+  // Filters the scenario list by the selected species and severity values.
   const filtered = useMemo(() => {
     return scenarios.filter((s) => {
       if (speciesFilter && !s.species.includes(speciesFilter)) return false;
@@ -57,8 +57,7 @@ export function ManageEmergencyListPage({ onNavigate }: ManageEmergencyListPageP
     });
   }, [scenarios, speciesFilter, severityFilter]);
 
-  /* ── Delete ────────────────────────────────────────────────────────────── */
-
+  // DELETEs the targeted scenario via the API and removes it from the local list on success.
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);

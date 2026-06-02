@@ -27,6 +27,7 @@ const emptyForm: VideoForm = {
   duration: '', description: '', instructor: '', videoUrl: '', thumbnail: '', relatedGuideId: '',
 };
 
+// Add/edit form for a video tutorial record with fields for metadata, media URLs, and a linked first-aid guide.
 export function AddEditVideoPage({ onNavigate, videoId }: AddEditVideoPageProps) {
   const isEdit = Boolean(videoId);
   const [form, setForm] = useState<VideoForm>(emptyForm);
@@ -65,11 +66,13 @@ export function AddEditVideoPage({ onNavigate, videoId }: AddEditVideoPageProps)
     }
   }, [isEdit, videoId]);
 
+  // Updates a single field in the video form state by key.
   const updateField = <K extends keyof VideoForm>(key: K, value: VideoForm[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const isValid = form.title.trim() !== '' && form.species !== '' && form.category !== '' && form.duration.trim() !== '';
 
+  // Validates required fields and POSTs a new video or PUTs an update, then navigates back to the video list.
   const handleSave = async () => {
     if (!isValid) { setError('Please fill in all required fields.'); return; }
     setSaving(true);

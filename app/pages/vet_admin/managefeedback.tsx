@@ -11,6 +11,7 @@ type FeedbackStatus = 'New' | 'Reviewed' | 'Action Needed';
 
 const STATUS_OPTIONS: FeedbackStatus[] = ['New', 'Reviewed', 'Action Needed'];
 
+// Returns the Tailwind badge class string for a given feedback status string.
 const getStatusClasses = (status: string) => {
   switch (status) {
     case 'New':           return 'bg-primary/10 text-primary';
@@ -20,6 +21,7 @@ const getStatusClasses = (status: string) => {
   }
 };
 
+// Renders a row of five star icons filled up to the given rating value.
 const StarRating = ({ rating }: { rating: number }) => (
   <div className="flex items-center gap-0.5">
     {[1, 2, 3, 4, 5].map((n) => (
@@ -32,6 +34,7 @@ const StarRating = ({ rating }: { rating: number }) => (
   </div>
 );
 
+// Formats an ISO date string to a short human-readable date in Malaysian locale, or returns '—' for missing dates.
 const formatDate = (raw: string) => {
   if (!raw) return '—';
   try {
@@ -43,6 +46,7 @@ const formatDate = (raw: string) => {
   }
 };
 
+// Feedback review page showing all user-submitted feedback with type/rating filters, sort order, summary stats, and a per-item status selector.
 export function ManageFeedbackPage({ onNavigate: _onNavigate }: ManageFeedbackPageProps) {
   const [items, setItems]               = useState<FeedbackItem[]>([]);
   const [loading, setLoading]           = useState(true);
@@ -63,8 +67,7 @@ export function ManageFeedbackPage({ onNavigate: _onNavigate }: ManageFeedbackPa
     return () => controller.abort();
   }, []);
 
-  /* ── Filtered + sorted list ────────────────────────────────────────────── */
-
+  // Filters and sorts the feedback list by content type, rating, and date order.
   const filtered = useMemo(() => {
     let list = [...items];
     if (typeFilter)   list = list.filter((f) => f.contentType === typeFilter);
@@ -77,16 +80,14 @@ export function ManageFeedbackPage({ onNavigate: _onNavigate }: ManageFeedbackPa
     return list;
   }, [items, typeFilter, ratingFilter, sortOrder]);
 
-  /* ── Summary counts ────────────────────────────────────────────────────── */
-
+  // Computes total, new, and action-needed feedback counts for the summary cards.
   const counts = useMemo(() => ({
     total:        items.length,
     newCount:     items.filter((f) => f.status === 'New').length,
     actionCount:  items.filter((f) => f.status === 'Action Needed').length,
   }), [items]);
 
-  /* ── Status update ─────────────────────────────────────────────────────── */
-
+  // PUTs the updated status for a feedback item and updates it in local state.
   const handleStatusChange = async (id: string, newStatus: FeedbackStatus) => {
     setUpdatingId(id);
     try {

@@ -8,6 +8,7 @@ interface QuizPreviewPageProps {
   quizId?: string;
 }
 
+// Admin quiz preview that simulates the pet owner quiz experience with live feedback and a results screen; quiz results are not saved.
 export function QuizPreviewPage({ onNavigate, quizId }: QuizPreviewPageProps) {
   const [quiz, setQuiz]           = useState<Quiz | null>(null);
   const [loading, setLoading]     = useState(true);
@@ -30,12 +31,14 @@ export function QuizPreviewPage({ onNavigate, quizId }: QuizPreviewPageProps) {
       .finally(() => setLoading(false));
   }, [quizId]);
 
+  // Records the selected answer and shows feedback by locking all options.
   const handleAnswer = (idx: number) => {
     if (feedbackShown) return;
     setSelectedAnswer(idx);
     setFeedbackShown(true);
   };
 
+  // Advances to the next question or transitions to the results screen after recording the current answer.
   const handleNext = () => {
     if (selectedAnswer === null || !quiz) return;
     const isCorrect   = selectedAnswer === quiz.questions[currentQuestion].correct;
@@ -54,6 +57,7 @@ export function QuizPreviewPage({ onNavigate, quizId }: QuizPreviewPageProps) {
     }
   };
 
+  // Resets all quiz progress state to restart the preview from the first question.
   const handleRetake = () => {
     setCurrentQuestion(0);
     setSelectedAnswer(null);
@@ -115,8 +119,7 @@ export function QuizPreviewPage({ onNavigate, quizId }: QuizPreviewPageProps) {
     );
   }
 
-  // ── Admin preview banner ───────────────────────────────────────────────────
-
+  // Admin notice banner indicating preview mode with an exit link back to the quiz list.
   const PreviewBanner = () => (
     <div className="bg-warning/10 border border-warning/20 rounded-md px-4 py-2 mb-6 flex items-center justify-between">
       <p className="text-sm text-warning font-medium">
@@ -210,6 +213,7 @@ export function QuizPreviewPage({ onNavigate, quizId }: QuizPreviewPageProps) {
   const correctIndex  = question.correct;
   const isLastQuestion = currentQuestion === quiz.questions.length - 1;
 
+  // Returns the CSS class string for an answer option based on selection and feedback state.
   const getOptionStyle = (idx: number) => {
     if (!feedbackShown) {
       return selectedAnswer === idx
@@ -221,6 +225,7 @@ export function QuizPreviewPage({ onNavigate, quizId }: QuizPreviewPageProps) {
     return 'border-border opacity-60 cursor-default';
   };
 
+  // Returns the CSS class string for the radio circle indicator based on selection and feedback state.
   const getCircleStyle = (idx: number) => {
     if (!feedbackShown) {
       return selectedAnswer === idx ? 'border-primary bg-primary' : 'border-muted-foreground';

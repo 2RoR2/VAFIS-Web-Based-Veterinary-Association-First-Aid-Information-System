@@ -14,6 +14,7 @@ const DIFFICULTY_CLASSES: Record<string, string> = {
   Advanced:     'bg-destructive/15 text-destructive',
 };
 
+// Quiz management list page with species and status filters, and per-row actions to edit, preview, publish, schedule, and archive quizzes.
 export function ManageQuizListPage({ onNavigate }: ManageQuizListPageProps) {
   const [quizzes, setQuizzes]       = useState<Quiz[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -39,14 +40,14 @@ export function ManageQuizListPage({ onNavigate }: ManageQuizListPageProps) {
     return () => controller.abort();
   }, []);
 
+  // Filters the quiz list by the selected species and status values.
   const filtered = quizzes.filter((q) => {
     const matchSpecies = speciesFilter === 'all' || q.species === speciesFilter;
     const matchStatus  = statusFilter  === 'all' || (q.status ?? 'draft') === statusFilter;
     return matchSpecies && matchStatus;
   });
 
-  // ── Row actions ────────────────────────────────────────────────────────────
-
+  // POSTs to the publish endpoint for the given quiz and updates it in the local list.
   const handlePublish = async (quiz: Quiz) => {
     setActionId(quiz.id);
     try {
@@ -59,12 +60,14 @@ export function ManageQuizListPage({ onNavigate }: ManageQuizListPageProps) {
     }
   };
 
+  // Opens the schedule modal with the quiz's existing scheduled date pre-filled.
   const openScheduleModal = (quiz: Quiz) => {
     setScheduleTarget(quiz);
     setScheduleDate(quiz.scheduledAt ? quiz.scheduledAt.slice(0, 16) : '');
     setScheduleError('');
   };
 
+  // PUTs the scheduled publication date for the quiz and updates it in the local list.
   const handleScheduleConfirm = async () => {
     if (!scheduleTarget || !scheduleDate) { setScheduleError('Please select a date and time.'); return; }
     setScheduling(true);
@@ -83,6 +86,7 @@ export function ManageQuizListPage({ onNavigate }: ManageQuizListPageProps) {
     }
   };
 
+  // POSTs to the archive endpoint for the given quiz after a confirmation prompt and updates it in the local list.
   const handleArchive = async (quiz: Quiz) => {
     if (!confirm(`Archive "${quiz.title}"? It will no longer be visible to pet owners.`)) return;
     setActionId(quiz.id);

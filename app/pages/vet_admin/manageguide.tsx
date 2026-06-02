@@ -10,6 +10,7 @@ interface ManageGuideListPageProps {
 
 const ALL_STATUSES = ['draft', 'pending_review', 'revision_required', 'reviewed', 'published', 'archived'];
 
+// Admin guide list page with title search, status/species/category filters, and per-row actions to view, edit, approve, and archive guides.
 export function ManageGuideListPage({ onNavigate }: ManageGuideListPageProps) {
   const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export function ManageGuideListPage({ onNavigate }: ManageGuideListPageProps) {
     return () => controller.abort();
   }, []);
 
+  // POSTs to the archive endpoint for the given guide and updates it in the local list.
   const handleArchive = async (guideId: string) => {
     setArchiving(guideId);
     try {
@@ -42,6 +44,7 @@ export function ManageGuideListPage({ onNavigate }: ManageGuideListPageProps) {
     }
   };
 
+  // Filters the guide list by search text, status, species, and category.
   const filtered = guides.filter((g) => {
     const matchSearch = g.title.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || g.status === statusFilter;
@@ -50,6 +53,7 @@ export function ManageGuideListPage({ onNavigate }: ManageGuideListPageProps) {
     return matchSearch && matchStatus && matchSpecies && matchCategory;
   });
 
+  // Formats an ISO date string to a short human-readable date in Malaysian locale, or returns null for missing dates.
   const formatDate = (iso: string | null | undefined) => {
     if (!iso) return null;
     return new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });

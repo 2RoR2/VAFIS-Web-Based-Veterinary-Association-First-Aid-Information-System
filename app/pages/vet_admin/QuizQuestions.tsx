@@ -24,6 +24,7 @@ const emptyQuestion: QuestionForm = {
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
+// Quiz question management page for adding, editing, and deleting questions, with a save-all action to persist changes to the API.
 export function QuizQuestionsPage({ onNavigate, quizId }: QuizQuestionsPageProps) {
   const [quiz, setQuiz]               = useState<Quiz | null>(null);
   const [questions, setQuestions]     = useState<QuizQuestion[]>([]);
@@ -51,14 +52,14 @@ export function QuizQuestionsPage({ onNavigate, quizId }: QuizQuestionsPageProps
       .finally(() => setLoading(false));
   }, [quizId]);
 
-  // ── Form helpers ───────────────────────────────────────────────────────────
-
+  // Resets the form to a blank question and opens the add modal.
   const openAddForm = () => {
     setForm(emptyQuestion);
     setEditIndex(null);
     setShowForm(true);
   };
 
+  // Loads an existing question into the form and opens the modal in edit mode.
   const openEditForm = (index: number) => {
     const q = questions[index];
     setForm({
@@ -71,8 +72,10 @@ export function QuizQuestionsPage({ onNavigate, quizId }: QuizQuestionsPageProps
     setShowForm(true);
   };
 
+  // Closes the question form modal and clears the edit index.
   const closeForm = () => { setShowForm(false); setEditIndex(null); };
 
+  // Updates the text of a single answer option at the given index.
   const updateOption = (i: number, value: string) => {
     setForm((prev) => {
       const options = [...prev.options] as [string, string, string, string];
@@ -86,6 +89,7 @@ export function QuizQuestionsPage({ onNavigate, quizId }: QuizQuestionsPageProps
     form.options.every((o) => o.trim() !== '') &&
     form.explanation.trim() !== '';
 
+  // Commits the form as a new question or an update to an existing one, then closes the modal.
   const handleFormSave = () => {
     if (!isFormValid) return;
     const entry: QuizQuestion = {
@@ -103,6 +107,7 @@ export function QuizQuestionsPage({ onNavigate, quizId }: QuizQuestionsPageProps
     setSaved(false); // mark as unsaved
   };
 
+  // Removes the question at the pending delete index from the local list.
   const handleDelete = () => {
     if (deleteIndex === null) return;
     setQuestions((prev) => prev.filter((_, i) => i !== deleteIndex));
@@ -110,8 +115,7 @@ export function QuizQuestionsPage({ onNavigate, quizId }: QuizQuestionsPageProps
     setSaved(false);
   };
 
-  // ── Save all to API ────────────────────────────────────────────────────────
-
+  // PUTs the full question array to the API to persist all pending changes.
   const handleSaveAll = async () => {
     if (!quizId) return;
     setSaving(true);

@@ -28,6 +28,7 @@ interface EmergencyPageProps {
   initialSearch?: string;
 }
 
+// Renders the guide search page with keyword, species, category, and severity filters backed by the search API.
 export function EmergencyPage({ onNavigate, initialSpecies, initialSearch }: EmergencyPageProps) {
   const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch || '');
