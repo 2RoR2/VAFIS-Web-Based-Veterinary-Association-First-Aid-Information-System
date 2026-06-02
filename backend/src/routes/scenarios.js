@@ -8,8 +8,10 @@ import {
   updateScenario,
 } from '../controllers/scenarios.js';
 
+// Wraps an async route handler to forward any unhandled promise rejections to Express's error handler.
 const asyncHandler = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+// Builds and returns an Express router with all emergency scenario routes registered.
 export const createScenariosRouter = (pool) => {
   const router = Router();
 

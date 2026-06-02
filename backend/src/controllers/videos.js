@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 
+// Maps a database video row to the public-facing video object.
 const mapVideo = (row) => ({
   id: row.id,
   title: row.title,
@@ -15,17 +16,20 @@ const mapVideo = (row) => ({
   relatedGuideId: row.relatedGuideId ?? null,
 });
 
+// Returns all videos ordered alphabetically by title.
 export const getVideos = (pool) => async (_req, res) => {
   const [rows] = await pool.query('SELECT * FROM videos ORDER BY title ASC');
   res.json(rows.map(mapVideo));
 };
 
+// Returns a single video by ID. Responds 404 if not found.
 export const getVideoById = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM videos WHERE id = ?', [req.params.id]);
   if (!rows[0]) { res.status(404).json({ error: 'Video not found.' }); return; }
   res.json(mapVideo(rows[0]));
 };
 
+// Creates a new video record with the provided fields. Requires title, species, category, and duration.
 export const createVideo = (pool) => async (req, res) => {
   const { title, duration, species, category, description, thumbnail, instructor, difficulty, videoUrl, relatedGuideId } = req.body ?? {};
 
@@ -50,6 +54,7 @@ export const createVideo = (pool) => async (req, res) => {
   res.status(201).json(mapVideo(created[0]));
 };
 
+// Updates an existing video's fields. Responds 404 if not found.
 export const updateVideo = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM videos WHERE id = ?', [req.params.id]);
   const existing = rows[0];
@@ -82,6 +87,7 @@ export const updateVideo = (pool) => async (req, res) => {
   res.json(mapVideo(updated[0]));
 };
 
+// Permanently deletes a video. Responds 404 if not found.
 export const deleteVideo = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM videos WHERE id = ?', [req.params.id]);
   if (!rows[0]) { res.status(404).json({ error: 'Video not found.' }); return; }

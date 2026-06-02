@@ -9,7 +9,7 @@ const mapPet = (row) => ({
   updatedAt: row.updatedAt ?? null,
 });
 
-// GET /api/pets — all pets for the current user
+// All pets for the current user
 export const getPets = (pool) => async (req, res) => {
   const [rows] = await pool.query(
     'SELECT * FROM pets WHERE userId = ? ORDER BY createdAt ASC',
@@ -18,7 +18,7 @@ export const getPets = (pool) => async (req, res) => {
   res.json(rows.map(mapPet));
 };
 
-// POST /api/pets — create a pet
+// Create a pet
 export const createPet = (pool) => async (req, res) => {
   const { name, species, age } = req.body ?? {};
 
@@ -37,7 +37,7 @@ export const createPet = (pool) => async (req, res) => {
   res.status(201).json(mapPet(rows[0]));
 };
 
-// PUT /api/pets/:id — update a pet
+// Update a pet
 export const updatePet = (pool) => async (req, res) => {
   const [rows] = await pool.query(
     'SELECT * FROM pets WHERE id = ? AND userId = ?',
@@ -64,7 +64,7 @@ export const updatePet = (pool) => async (req, res) => {
   res.json(mapPet(updated[0]));
 };
 
-// DELETE /api/pets/:id — delete a pet
+// Delete a pet
 export const deletePet = (pool) => async (req, res) => {
   const [rows] = await pool.query(
     'SELECT id FROM pets WHERE id = ? AND userId = ?',

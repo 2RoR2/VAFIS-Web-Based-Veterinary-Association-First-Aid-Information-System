@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 
+// Maps a database emergency scenario row to the public-facing scenario object.
 const mapScenario = (row) => ({
   id:          row.id,
   name:        row.name,
@@ -8,17 +9,20 @@ const mapScenario = (row) => ({
   description: row.description ?? '',
 });
 
+// Returns all emergency scenarios ordered alphabetically by name.
 export const getScenarios = (pool) => async (_req, res) => {
   const [rows] = await pool.query('SELECT * FROM emergency_scenarios ORDER BY name ASC');
   res.json(rows.map(mapScenario));
 };
 
+// Returns a single emergency scenario by ID. Responds 404 if not found.
 export const getScenarioById = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM emergency_scenarios WHERE id = ?', [req.params.id]);
   if (!rows[0]) { res.status(404).json({ error: 'Scenario not found.' }); return; }
   res.json(mapScenario(rows[0]));
 };
 
+// Creates a new emergency scenario with name, species array, severity, and optional description.
 export const createScenario = (pool) => async (req, res) => {
   const { name, species, severity, description } = req.body ?? {};
 
@@ -47,6 +51,7 @@ export const createScenario = (pool) => async (req, res) => {
   res.status(201).json(mapScenario(created[0]));
 };
 
+// Updates an existing emergency scenario's fields. Responds 404 if not found.
 export const updateScenario = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM emergency_scenarios WHERE id = ?', [req.params.id]);
   const existing = rows[0];
@@ -71,6 +76,7 @@ export const updateScenario = (pool) => async (req, res) => {
   res.json(mapScenario(updated[0]));
 };
 
+// Permanently deletes an emergency scenario. Responds 404 if not found.
 export const deleteScenario = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM emergency_scenarios WHERE id = ?', [req.params.id]);
   if (!rows[0]) { res.status(404).json({ error: 'Scenario not found.' }); return; }

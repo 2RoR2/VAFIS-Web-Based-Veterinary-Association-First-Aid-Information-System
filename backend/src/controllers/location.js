@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import { ClinicDirectory } from '../repositories/ClinicDirectory.js';
 
+// Safely parses a JSON value that may arrive as a Buffer, string, or already-parsed object.
+// Returns the fallback if the value is null or undefined.
 const parseJson = (value, fallback) => {
   if (value === null || value === undefined) return fallback;
   if (Buffer.isBuffer(value)) return JSON.parse(value.toString('utf8')) ?? fallback;
@@ -8,6 +10,7 @@ const parseJson = (value, fallback) => {
   return value ?? fallback;
 };
 
+// Maps a database clinic row to the public-facing clinic object, parsing all JSON columns.
 const mapClinic = (row) => ({
   id: row.id,
   name: row.name,
@@ -59,8 +62,7 @@ export const getClinics = (pool) => async (req, res) => {
   res.json(rows.map(mapClinic));
 };
 
-// ── GET /api/clinics/:id ──────────────────────────────────────────────────────
-
+// Returns a single clinic by ID. Responds 404 if not found.
 export const getClinicById = (pool) => async (req, res) => {
   const clinicDirectory = new ClinicDirectory(pool);
   const clinic = await clinicDirectory.findById(req.params.id);
@@ -68,8 +70,7 @@ export const getClinicById = (pool) => async (req, res) => {
   res.json(mapClinic(clinic));
 };
 
-// ── POST /api/clinics ─────────────────────────────────────────────────────────
-
+// Creates a new clinic record. Requires name, address, city, phone, email, and hours.
 export const createClinic = (pool) => async (req, res) => {
   const clinicDirectory = new ClinicDirectory(pool);
   const { name, address, city, phone, email, website, hours, isEmergency, species, services, lat, lng } = req.body ?? {};
@@ -100,8 +101,7 @@ export const createClinic = (pool) => async (req, res) => {
   res.status(201).json(mapClinic(created));
 };
 
-// ── PUT /api/clinics/:id ──────────────────────────────────────────────────────
-
+// Updates an existing clinic's fields. Responds 404 if not found.
 export const updateClinic = (pool) => async (req, res) => {
   const clinicDirectory = new ClinicDirectory(pool);
   const existing = await clinicDirectory.findById(req.params.id);
@@ -130,8 +130,7 @@ export const updateClinic = (pool) => async (req, res) => {
   res.json(mapClinic(updated));
 };
 
-// ── DELETE /api/clinics/:id ───────────────────────────────────────────────────
-
+// Permanently deletes a clinic. Responds 404 if not found.
 export const deleteClinic = (pool) => async (req, res) => {
   const clinicDirectory = new ClinicDirectory(pool);
   const clinic = await clinicDirectory.findById(req.params.id);
@@ -140,8 +139,7 @@ export const deleteClinic = (pool) => async (req, res) => {
   res.json({ message: 'Clinic deleted.' });
 };
 
-// ── GET /api/clinics/emergency-contacts ──────────────────────────────────────
-
+// Returns all emergency contact records from the emergency_contacts table.
 export const getEmergencyContacts = (pool) => async (_req, res) => {
   const clinicDirectory = new ClinicDirectory(pool);
   const rows = await clinicDirectory.findEmergencyContacts();

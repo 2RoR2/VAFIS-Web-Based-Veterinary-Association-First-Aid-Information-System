@@ -8,8 +8,10 @@ import {
   sendOtpEmail,
 } from '../controllers/mfa.js';
 
+// Wraps an async route handler to forward any unhandled promise rejections to Express's error handler.
 const asyncHandler = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+// Builds and returns an Express router with all MFA management routes registered.
 export const createMfaRouter = (pool) => {
   const router = Router();
 

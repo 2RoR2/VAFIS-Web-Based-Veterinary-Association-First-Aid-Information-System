@@ -4,6 +4,7 @@ export const MFA_OTP_EXPIRY_MINUTES = 10;
 
 // ── Helpers (also used by auth.js) ───────────────────────────────────────────
 
+// Generates a random 6-digit OTP code as a string.
 export const generateOtp = () =>
   String(Math.floor(100000 + Math.random() * 900000));
 
@@ -91,8 +92,7 @@ export const sendOtpEmail = async (toEmail, otp, purpose = 'verify') => {
   console.log('[EMAIL] Sent successfully. Message ID:', info.messageId);
 };
 
-// ── GET /api/mfa/status ───────────────────────────────────────────────────────
-
+// Returns whether MFA is currently enabled for the authenticated user.
 export const getMfaStatus = (pool) => async (req, res) => {
   const [rows] = await pool.query(
     'SELECT mfaEnabled FROM users WHERE id = ?',
@@ -181,8 +181,7 @@ export const verifyMfaEnable = (pool) => async (req, res) => {
   res.json({ mfaEnabled: true });
 };
 
-// ── POST /api/mfa/disable ─────────────────────────────────────────────────────
-
+// Disables MFA for the authenticated user and clears any stored OTP data.
 export const disableMfa = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT id FROM users WHERE id = ?', [req.user.id]);
   if (!rows[0]) { res.status(404).json({ error: 'User not found.' }); return; }

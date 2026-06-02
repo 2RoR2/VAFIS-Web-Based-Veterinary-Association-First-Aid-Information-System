@@ -8,8 +8,10 @@ import {
   updateCategory,
 } from '../controllers/categories.js';
 
+// Wraps an async route handler to forward any unhandled promise rejections to Express's error handler.
 const asyncHandler = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+// Builds and returns an Express router with all content category routes registered.
 export const createCategoriesRouter = (pool) => {
   const router = Router();
 

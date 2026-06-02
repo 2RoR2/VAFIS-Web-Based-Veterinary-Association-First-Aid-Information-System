@@ -32,21 +32,26 @@ const REFRESH_COOKIE_OPTIONS = {
   path: '/',
 };
 
+// Signs and returns a pair of JWT access and refresh tokens using the given payload.
 const signTokens = (payload) => ({
   accessToken: jwt.sign({ ...payload, type: 'access' }, JWT_ACCESS_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES }),
   refreshToken: jwt.sign({ ...payload, type: 'refresh' }, JWT_REFRESH_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES }),
 });
 
+// Sets the access and refresh token JWTs as httpOnly cookies on the response.
 const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTIONS);
   res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
 };
 
+// Removes the access and refresh token cookies from the response to end the session.
 const clearAuthCookies = (res) => {
   res.clearCookie('accessToken', { path: '/' });
   res.clearCookie('refreshToken', { path: '/' });
 };
 
+// Authenticates a user by email and password. If MFA is enabled, issues a short-lived
+// pending token and sends an OTP email instead of granting full access immediately.
 export const login = (pool) => async (req, res) => {
   const { email, password } = req.body ?? {};
 
@@ -191,6 +196,7 @@ export const verifyMfaLogin = (pool) => async (req, res) => {
   });
 };
 
+// Registers a new user account, hashes the password, and issues auth cookies on success.
 export const signup = (pool) => async (req, res) => {
   const { fullName, email, password } = req.body ?? {};
 
@@ -233,6 +239,7 @@ export const signup = (pool) => async (req, res) => {
   });
 };
 
+// Issues a new access and refresh token pair by validating the existing refresh token cookie.
 export const refresh = () => async (req, res) => {
   const token = req.cookies?.refreshToken;
 
@@ -271,6 +278,7 @@ export const refresh = () => async (req, res) => {
   });
 };
 
+// Returns the currently authenticated user's profile decoded from the access token cookie.
 export const me = () => async (req, res) => {
   const token = req.cookies?.accessToken;
 
@@ -302,6 +310,7 @@ export const me = () => async (req, res) => {
   });
 };
 
+// Clears the auth cookies to end the user's session.
 export const logout = () => (_req, res) => {
   clearAuthCookies(res);
   res.json({ message: 'Logged out.' });

@@ -220,7 +220,7 @@ export function VetProfilePage({ onNavigate, currentUser, onUserUpdate }: VetPro
           </div>
         </section>
 
-        {/* MFA Settings — Coming Soon */}
+        {/* MFA Settings */}
         <section className="bg-white rounded-lg border border-border p-6">
           <div className="flex items-center justify-between mb-1">
             <h2>MFA Settings</h2>

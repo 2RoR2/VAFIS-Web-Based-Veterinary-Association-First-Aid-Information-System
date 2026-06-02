@@ -14,8 +14,6 @@ const mapVet = (row) => ({
     : String(row.createdAt ?? ''),
 });
 
-// ── GET /api/admin/vets ───────────────────────────────────────────────────────
-
 // Returns all users with the 'professional' role, ordered alphabetically by name.
 export const listVets = (pool) => async (_req, res) => {
   const [rows] = await pool.query(
@@ -25,8 +23,6 @@ export const listVets = (pool) => async (_req, res) => {
   );
   res.json(rows.map(mapVet));
 };
-
-// ── GET /api/admin/vets/:id ───────────────────────────────────────────────────
 
 // Returns a single veterinary professional by their user ID. Responds 404 if not found.
 export const getVetById = (pool) => async (req, res) => {
@@ -38,8 +34,6 @@ export const getVetById = (pool) => async (req, res) => {
   if (!rows[0]) { res.status(404).json({ error: 'Veterinary professional not found.' }); return; }
   res.json(mapVet(rows[0]));
 };
-
-// ── POST /api/admin/vets ──────────────────────────────────────────────────────
 
 /**
  * Creates a new veterinary professional account.
@@ -79,8 +73,6 @@ export const createVet = (pool) => async (req, res) => {
   );
   res.status(201).json(mapVet(created[0]));
 };
-
-// ── PUT /api/admin/vets/:id/suspend ──────────────────────────────────────────
 
 /**
  * Toggles the suspended state of a veterinary professional account.

@@ -2,8 +2,10 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { getQuizzes, getQuizById, submitQuizResult, getMyResults } from '../controllers/quiz.js';
 
+// Wraps an async route handler to forward any unhandled promise rejections to Express's error handler.
 const asyncHandler = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+// Builds and returns an Express router with all quiz routes registered.
 export const createQuizRouter = (pool) => {
   const router = Router();
 

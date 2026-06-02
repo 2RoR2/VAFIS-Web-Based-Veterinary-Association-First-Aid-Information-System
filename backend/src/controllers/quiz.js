@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 
+// Safely parses a JSON value that may arrive as a Buffer, string, or already-parsed object.
+// Returns the fallback if the value is null or undefined.
 const parseJson = (value, fallback) => {
   if (value === null || value === undefined) return fallback;
   if (Buffer.isBuffer(value)) return JSON.parse(value.toString('utf8')) ?? fallback;
@@ -7,6 +9,7 @@ const parseJson = (value, fallback) => {
   return value ?? fallback;
 };
 
+// Maps a database quiz row to the public-facing quiz object.
 const mapQuiz = (row) => ({
   id: row.id,
   title: row.title,
@@ -18,6 +21,7 @@ const mapQuiz = (row) => ({
   description: row.description,
 });
 
+// Maps a database quiz result row to the public-facing result object.
 const mapResult = (row) => ({
   id: row.id,
   quizId: row.quizId,
@@ -33,11 +37,13 @@ const mapResult = (row) => ({
 
 // ── Public ───────────────────────────────────────────────────────────────────
 
+// Returns all quizzes from the database.
 export const getQuizzes = (pool) => async (_req, res) => {
   const [rows] = await pool.query('SELECT * FROM quizzes');
   res.json(rows.map(mapQuiz));
 };
 
+// Returns a single quiz by ID. Responds 404 if not found.
 export const getQuizById = (pool) => async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM quizzes WHERE id = ?', [req.params.id]);
   if (!rows[0]) { res.status(404).json({ error: 'Quiz not found.' }); return; }
@@ -46,6 +52,7 @@ export const getQuizById = (pool) => async (req, res) => {
 
 // ── Authenticated ─────────────────────────────────────────────────────────────
 
+// Saves the authenticated user's quiz attempt result to the database.
 export const submitQuizResult = (pool) => async (req, res) => {
   const { score, totalQuestions, percentage, passed, userAnswers } = req.body ?? {};
 
@@ -80,6 +87,7 @@ export const submitQuizResult = (pool) => async (req, res) => {
   });
 };
 
+// Returns the last 50 quiz attempt results for the currently authenticated user.
 export const getMyResults = (pool) => async (req, res) => {
   const [rows] = await pool.query(
     `SELECT qr.*, q.title AS quizTitle, q.questions

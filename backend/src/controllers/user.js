@@ -5,11 +5,13 @@ const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? 'vafis-dev-access-sec
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'vafis-dev-refresh-secret-change-in-production';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
+// Signs and returns a pair of JWT access and refresh tokens using the given payload.
 const signTokens = (payload) => ({
   accessToken: jwt.sign({ ...payload, type: 'access' }, JWT_ACCESS_SECRET, { expiresIn: '5m' }),
   refreshToken: jwt.sign({ ...payload, type: 'refresh' }, JWT_REFRESH_SECRET, { expiresIn: '7d' }),
 });
 
+// Sets the access and refresh token JWTs as httpOnly cookies on the response.
 const setAuthCookies = (res, accessToken, refreshToken) => {
   res.cookie('accessToken', accessToken, {
     httpOnly: true, secure: IS_PROD, sameSite: 'lax', maxAge: 5 * 60 * 1000, path: '/',

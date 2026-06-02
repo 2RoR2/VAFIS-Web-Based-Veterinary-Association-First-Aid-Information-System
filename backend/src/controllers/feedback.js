@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
 
-// ── GET /api/feedback ─────────────────────────────────────────────────────────
 // Admin / professional only — see all submitted feedback, newest first.
 
 export const getFeedback = (pool) => async (_req, res) => {
@@ -8,7 +7,6 @@ export const getFeedback = (pool) => async (_req, res) => {
   res.json(rows);
 };
 
-// ── POST /api/feedback ────────────────────────────────────────────────────────
 // Authenticated users only.
 // submittedBy is taken from req.user.fullName (set by requireAuth middleware).
 
@@ -58,7 +56,6 @@ export const submitFeedback = (pool) => async (req, res) => {
   });
 };
 
-// ── PUT /api/feedback/:id/status ──────────────────────────────────────────────
 // Admin only — update the review status of a feedback item.
 
 export const updateFeedbackStatus = (pool) => async (req, res) => {

@@ -10,8 +10,10 @@ import {
   getNearbyClinics,
 } from '../controllers/location.js';
 
+// Wraps an async route handler to forward any unhandled promise rejections to Express's error handler.
 const asyncHandler = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+// Builds and returns an Express router with all clinic/location routes registered.
 export const createLocationRouter = (pool) => {
   const router = Router();
 

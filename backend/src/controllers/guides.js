@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import { GuideRepository } from '../repositories/GuideRepository.js';
 
+// Safely parses a JSON value that may arrive as a Buffer, string, or already-parsed object.
+// Returns the fallback if the value is null or undefined.
 const parseJson = (value, fallback) => {
   if (value === null || value === undefined) return fallback;
   if (Buffer.isBuffer(value)) return JSON.parse(value.toString('utf8')) ?? fallback;
@@ -8,6 +10,7 @@ const parseJson = (value, fallback) => {
   return value ?? fallback;
 };
 
+// Maps a database guide row to the public-facing guide object, parsing all JSON columns.
 const mapGuide = (row) => ({
   id: row.id,
   status: row.status ?? 'published',
@@ -34,27 +37,32 @@ const mapGuide = (row) => ({
 
 // ── Search strategies (Strategy pattern) ────────────────────────────────────
 
+// Search strategy: matches the keyword against guide title and description (case-insensitive).
 const keywordStrategy = (q) => ({
   sql: '(LOWER(title) LIKE ? OR LOWER(description) LIKE ?)',
   params: [`%${q.toLowerCase()}%`, `%${q.toLowerCase()}%`],
 });
 
+// Search strategy: matches guides whose species JSON array contains the given species value.
 const speciesStrategy = (species) => ({
   // species column is a JSON array e.g. ["Dogs","Cats"] — match the quoted element
   sql: 'species LIKE ?',
   params: [`%"${species}"%`],
 });
 
+// Search strategy: matches guides with an exact category value.
 const categoryStrategy = (category) => ({
   sql: 'category = ?',
   params: [category],
 });
 
+// Search strategy: matches guides with an exact severity level.
 const severityStrategy = (severity) => ({
   sql: 'severity = ?',
   params: [severity],
 });
 
+// Searches published guides using one or more strategy-based filter conditions built from query params.
 export const searchGuides = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const { q, species, category, severity } = req.query;
@@ -74,18 +82,21 @@ export const searchGuides = (pool) => async (req, res) => {
 
 // ── Public ──────────────────────────────────────────────────────────────────
 
+// Returns all published guides, visible to the public.
 export const getPublishedGuides = (pool) => async (_req, res) => {
   const repo = new GuideRepository(pool);
   const rows = await repo.findPublished();
   res.json(rows.map(mapGuide));
 };
 
+// Returns all guides regardless of status, intended for admin and vet pipeline views.
 export const getAdminGuides = (pool) => async (_req, res) => {
   const repo = new GuideRepository(pool);
   const rows = await repo.findAll();
   res.json(rows.map(mapGuide));
 };
 
+// Returns a single guide by ID. Non-published guides are hidden from non-admin/vet users.
 export const getGuideById = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);
@@ -106,6 +117,7 @@ export const getGuideById = (pool) => async (req, res) => {
 
 // ── Admin CRUD ───────────────────────────────────────────────────────────────
 
+// Creates a new first-aid guide in draft status and logs the creation in the audit trail.
 export const createGuide = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const { title, species, severity, readTime, description, category, steps, warnings, relatedVideos, relatedGuides } = req.body ?? {};
@@ -137,6 +149,7 @@ export const createGuide = (pool) => async (req, res) => {
   res.status(201).json(mapGuide(created));
 };
 
+// Updates an existing guide's fields. Only allowed when the guide is in draft or revision_required status.
 export const updateGuide = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);
@@ -171,6 +184,7 @@ export const updateGuide = (pool) => async (req, res) => {
   res.json(mapGuide(updated));
 };
 
+// Permanently deletes a guide and logs the deletion in the audit trail. Responds 404 if not found.
 export const deleteGuide = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);
@@ -188,6 +202,7 @@ export const deleteGuide = (pool) => async (req, res) => {
 
 // ── Workflow transitions ─────────────────────────────────────────────────────
 
+// Transitions a guide to pending_review and notifies the assigned vet (or all vets if none assigned).
 export const submitForReview = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);
@@ -218,6 +233,7 @@ export const submitForReview = (pool) => async (req, res) => {
   res.json(mapGuide(updated));
 };
 
+// Processes a vet's review decision: approve moves the guide to reviewed, request_changes moves it to revision_required.
 export const reviewGuide = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);
@@ -260,6 +276,7 @@ export const reviewGuide = (pool) => async (req, res) => {
   res.json(mapGuide(updated));
 };
 
+// Publishes a reviewed guide, making it publicly visible to all users.
 export const publishGuide = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);
@@ -280,6 +297,7 @@ export const publishGuide = (pool) => async (req, res) => {
   res.json(mapGuide(updated));
 };
 
+// Archives a guide, removing it from public view while retaining it for audit purposes.
 export const archiveGuide = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);
@@ -305,6 +323,7 @@ export const archiveGuide = (pool) => async (req, res) => {
   res.json(mapGuide(updated));
 };
 
+// Reverts a published guide back to draft status, removing it from public view.
 export const unpublishGuide = (pool) => async (req, res) => {
   const repo = new GuideRepository(pool);
   const guide = await repo.findById(req.params.id);

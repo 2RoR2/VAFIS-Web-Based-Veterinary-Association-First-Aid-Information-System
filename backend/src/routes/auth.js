@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { login, logout, me, refresh, signup, verifyMfaLogin } from '../controllers/auth.js';
 
+// Wraps an async route handler to forward any unhandled promise rejections to Express's error handler.
 const asyncHandler = (fn) => (req, res, next) => fn(req, res, next).catch(next);
 
+// Builds and returns an Express router with all authentication routes registered.
 export const createAuthRouter = (pool) => {
   const router = Router();
 
